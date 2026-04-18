@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ptlpos-api
+    env: node
+    plan: standard
+    buildCommand: npm install && npm run prisma:generate && npx nest build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
