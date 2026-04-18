@@ -1,0 +1,90 @@
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
+import { RoleName } from '@prisma/client';
+import * as jwt from 'jsonwebtoken';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { RequestWithContext } from '../types/request-context';
+
+@Injectable()
+export class RequestContextGuard implements CanActivate {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly configService: ConfigService
+  ) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    const request = context.switchToHttp().getRequest<RequestWithContext>();
+
+    // Check for JWT-based auth from Authorization header
+    const authHeader = request.header('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7); // Remove "Bearer " prefix
+        const secret =
+          this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
+        const payload = jwt.verify(token, secret) as any;
+
+        const { sub, tenantId, role } = payload;
+        const branchId = payload.branchId || request.header('x-branch-id');
+        if (sub && tenantId && role && Object.values(RoleName).includes(role as RoleName)) {
+          request.auth = {
+            tenantId,
+            userId: sub,
+            role: role as RoleName,
+            branchId,
+          };
+          return true;
+        }
+      } catch (error) {
+        // Token verification failed, continue to check other auth methods
+      }
+    }
+
+    // Check for JWT-based auth from Passport (attached to request.user by JwtAuthGuard)
+    if (request.user) {
+      const user = request.user as any;
+      const { sub, tenantId, role, branchId } = user;
+      if (sub && tenantId && role && Object.values(RoleName).includes(role as RoleName)) {
+        request.auth = {
+          tenantId,
+          userId: sub,
+          role: role as RoleName,
+          branchId,
+        };
+        return true;
+      }
+    }
+
+    // If endpoint is public, allow without authentication
+    if (isPublic) {
+      return true;
+    }
+
+    // Fall back to header-based auth for backward compatibility
+    const tenantId = request.header('x-tenant-id');
+    const userId = request.header('x-user-id');
+    const role = request.header('x-user-role') as RoleName | undefined;
+    const branchId = request.header('x-branch-id');
+
+    if (tenantId && userId && role && Object.values(RoleName).includes(role)) {
+      request.auth = {
+        tenantId,
+        userId,
+        role,
+        branchId: branchId || undefined,
+      };
+      return true;
+    }
+
+    // Only throw if not public AND no auth provided
+    throw new UnauthorizedException(
+      'Missing authentication: provide JWT Bearer token or headers (x-tenant-id, x-user-id, x-user-role)'
+    );
+  }
+}
