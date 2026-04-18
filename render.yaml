@@ -3,12 +3,17 @@ services:
     name: ptlpos-api
     env: node
     plan: free
-    buildCommand: npm install && npm run prisma:generate && npx nest build
+    buildCommand: npm install && npm run prisma:generate && npm run build
     startCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      # Note: Add DATABASE_URL, REDIS_URL, JWT_SECRET, etc. in Render dashboard
+    # Add these in Render dashboard:
+    # DATABASE_URL - PostgreSQL (external service)
+    # REDIS_URL - Redis (external service, optional)
+    # JWT_SECRET - generate with: openssl rand -hex 32
+    # MAILGUN_DOMAIN, MAILGUN_API_KEY, MAILGUN_FROM_EMAIL
+
 

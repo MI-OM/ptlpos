@@ -1,8 +1,9 @@
 # PTLPOS Render Free Plan Deployment Guide
 
 **Plan**: Render Free Tier ($0/month)  
-**Deployment Time**: 15-20 minutes  
-**Status**: Ready to Deploy ✅
+**Deployment Time**: 30-45 minutes  
+**Status**: ✅ **Ready to Deploy**  
+**Build Fixed**: ✅ Using `./node_modules/.bin/nest` (works with npm install)
 
 ---
 
@@ -10,24 +11,32 @@
 
 ### What's Included
 - ✅ 1 free web service
-- ✅ 750 hours/month (always-on within limits)
-- ✅ Auto-spins down after 15 min inactivity (5-10 sec startup time)
+- ✅ 750 hours/month runtime
+- ✅ Auto-spins down after 15 min inactivity (resumes on next request)
 - ✅ 0.5 CPU, 512MB RAM
 - ✅ GitHub integration with auto-deploy
+- ✅ Free SSL certificate (HTTPS included)
 
 ### What You Need Externally
 - 🔗 PostgreSQL database (free options below)
-- 🔗 Redis (optional, can skip for free plan)
-- 🔗 Mailgun account (for email)
+- 🔗 Mailgun account (for email, free tier available)
+- ❌ **NO Redis** on free tier (Render doesn't offer free Redis)
 
 ---
 
-## 📦 Step 1: Set Up External Databases (5 minutes)
+## 📦 Step 1: Set Up External Database (5 minutes)
 
-### Option A: PostgreSQL (Railway.app - Recommended for Free Tier)
+### ✅ Option A: ElephantSQL (Easiest - Free 20MB)
 
-1. Go to **https://railway.app**
+1. Go to **https://www.elephantsql.com**
 2. Sign up with GitHub
+3. Click "+ Create New Instance"
+   - Name: `ptlpos`
+   - Plan: **Tiny Turtle (Free)**
+   - Region: US East (same as Render default)
+4. Wait for "Available" status
+5. Copy the full database URL
+6. Save it for later: `postgresql://user:pass@host`
 3. Create new project → Add PostgreSQL
 4. Copy connection string from **Railway Dashboard**
    - Format: `postgresql://user:password@host:port/dbname`
