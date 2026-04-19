@@ -10,6 +10,9 @@ services:
         value: production
       - key: PORT
         value: 3000
+      - key: DATABASE_URL
+        scope: build
+        value: "postgresql://user:password@localhost/db"
     # Add these in Render dashboard:
     # DATABASE_URL - PostgreSQL (external service)
     # REDIS_URL - Redis (external service, optional)
