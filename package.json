@@ -5,8 +5,8 @@
   "description": "Multi-tenant POS and retail SaaS backend",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "./node_modules/.bin/nest build",
-    "start": "./node_modules/.bin/nest start",
+    "build": "node ./node_modules/@nestjs/cli/bin/nest.js build",
+    "start": "node ./node_modules/@nestjs/cli/bin/nest.js start",
     "start:dev": "npx nest start --watch",
     "start:prod": "node dist/main",
     "test": "jest --runInBand",
