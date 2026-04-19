@@ -21,7 +21,7 @@ Region: [your choice - doesn't matter for free tier]
 Build & Deploy: Always build and deploy from head
 
 🔴 CRITICAL - Build Command:
-npm install --legacy-peer-deps && npm run prisma:generate && npm run build
+npm install --legacy-peer-deps && npx prisma generate && npm run build
 
 🔴 CRITICAL - Start Command:
 npm run start:prod
@@ -64,9 +64,9 @@ MAILGUN_FROM_EMAIL  noreply@ptlpos.com
 
 You should now see in logs:
 ```
-==> Running build command 'npm install --legacy-peer-deps && npm run prisma:generate && npm run build'...
+==> Running build command 'npm install --legacy-peer-deps && npx prisma generate && npm run build'...
 ✓ npm install
-✓ npm run prisma:generate  
+✓ npx prisma generate
 ✓ npm run build
 ==> Your service is live!
 ```
@@ -97,7 +97,7 @@ You should now see in logs:
 4. **Find Build Command field**
 5. **Replace with**:
    ```
-   npm install --legacy-peer-deps && npm run prisma:generate && npm run build
+   npm install --legacy-peer-deps && npx prisma generate && npm run build
    ```
 6. **Click Save**
 7. **Click Manual Deploy**
@@ -117,10 +117,10 @@ Your original setting:
 - So npx can't find the nest binary
 
 Fixed command:
-- Build Command: `npm install --legacy-peer-deps && npm run prisma:generate && npm run build` ✅
+- Build Command: `npm install --legacy-peer-deps && npx prisma generate && npm run build` ✅
 - This runs all three steps in sequence
 - Dependencies installed first
-- Prisma client generated
+- Prisma client generated using npx
 - Then builds the app
 
 ---

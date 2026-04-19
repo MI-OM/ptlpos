@@ -44,7 +44,7 @@ npm run lint
    - Connect your GitHub repo
    - Name: `ptlpos-api`
    - Environment: `Node`
-   - Build Command: `npm install --legacy-peer-deps && npm run prisma:generate && npm run build`
+   - Build Command: `npm install --legacy-peer-deps && npx prisma generate && npm run build`
    - Start Command: `npm run start:prod`
    - Plan: Starter or paid (minimum 0.5 vCPU, 1GB RAM)
    - Click Create (DON'T deploy yet!)
