@@ -21,7 +21,7 @@ Region: [your choice - doesn't matter for free tier]
 Build & Deploy: Always build and deploy from head
 
 🔴 CRITICAL - Build Command:
-npm install --legacy-peer-deps && npx prisma generate && npm run build
+npm install --legacy-peer-deps --audit=false --fund=false && npx prisma generate && npm run build
 
 🔴 CRITICAL - Start Command:
 npm run start:prod
@@ -97,7 +97,7 @@ You should now see in logs:
 4. **Find Build Command field**
 5. **Replace with**:
    ```
-   npm install --legacy-peer-deps && npx prisma generate && npm run build
+   npm install --legacy-peer-deps --audit=false --fund=false && npx prisma generate && npm run build
    ```
 6. **Click Save**
 7. **Click Manual Deploy**
