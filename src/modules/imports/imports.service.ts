@@ -1,6 +1,6 @@
 import { Injectable, ConflictException } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuthContext } from '../../core/types/request-context';
 import { ImportProductsDto } from './dto/import-products.dto';
 import { ImportCustomersDto } from './dto/import-customers.dto';
 import { ImportSuppliersDto } from './dto/import-suppliers.dto';

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { CreateBranchDto, UpdateBranchDto } from './dto/create-branch.dto';
 

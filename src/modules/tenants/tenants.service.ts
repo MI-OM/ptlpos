@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuthContext } from '../../core/types/request-context';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateTenantDetailsDto } from './dto/update-tenant-details.dto';

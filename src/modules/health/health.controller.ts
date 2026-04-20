@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { Public } from 'src/core/decorators/public.decorator';
+import { Public } from '../../core/decorators/public.decorator';
 import { HealthService } from './health.service';
 
 @Controller('health')

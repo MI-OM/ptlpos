@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Post, Patch } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { Public } from 'src/core/decorators/public.decorator';
-import { AuthContext } from 'src/core/types/request-context';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Public } from '../../core/decorators/public.decorator';
+import { AuthContext } from '../../core/types/request-context';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';

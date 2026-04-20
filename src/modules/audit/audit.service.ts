@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from 'src/core/database/prisma.service';
+import { PrismaService } from '../../core/database/prisma.service';
 
 interface AuditPayload {
   tenantId: string;

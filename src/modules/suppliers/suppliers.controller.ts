@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { AuthContext } from 'src/core/types/request-context';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { AuthContext } from '../../core/types/request-context';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { SuppliersService } from './suppliers.service';

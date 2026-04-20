@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { RoleName } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';

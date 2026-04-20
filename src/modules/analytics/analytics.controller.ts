@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { AuthContext } from 'src/core/types/request-context';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { AuthContext } from '../../core/types/request-context';
 import { AnalyticsService } from './analytics.service';
 
 @Controller('analytics')

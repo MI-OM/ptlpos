@@ -5,9 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InventoryTransactionType, ProductType, Prisma } from '@prisma/client';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { RedisService } from 'src/core/database/redis.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { RedisService } from '../../core/database/redis.service';
+import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { CompositeProductDto } from './dto/composite-product.dto';
 import { CreateProductDto } from './dto/create-product.dto';

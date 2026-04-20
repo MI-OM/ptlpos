@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentDirection, PaymentMethod, PaymentStatus, Prisma, SaleStatus } from '@prisma/client';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 

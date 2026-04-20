@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { AuthContext } from 'src/core/types/request-context';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { AuthContext } from '../../core/types/request-context';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { PurchaseOrdersService } from './purchase-orders.service';
 

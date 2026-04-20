@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { RoleName } from '@prisma/client';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { Roles } from 'src/core/decorators/roles.decorator';
-import { AuthContext } from 'src/core/types/request-context';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { AuthContext } from '../../core/types/request-context';
 import { CreateBranchDto, UpdateBranchDto } from './dto/create-branch.dto';
 import { BranchesService } from './branches.service';
 

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InventoryTransactionType, Prisma, StocktakeStatus } from '@prisma/client';
-import { PrismaService } from 'src/core/database/prisma.service';
-import { AuthContext } from 'src/core/types/request-context';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { AdjustInventoryDto } from './dto/adjust-inventory.dto';
 import { CreateStocktakeDto, RecordStocktakeCountsDto } from './dto/stocktake.dto';

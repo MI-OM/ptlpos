@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { RoleName } from '@prisma/client';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
-import { Roles } from 'src/core/decorators/roles.decorator';
-import { AuthContext } from 'src/core/types/request-context';
+import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { AuthContext } from '../../core/types/request-context';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
