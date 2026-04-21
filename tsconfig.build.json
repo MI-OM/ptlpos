@@ -8,7 +8,8 @@
     "noEmitOnError": false,
     "rootDir": "./src",
     "module": "es2020",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "types": ["node"]
   },
   "exclude": [
     "node_modules",
