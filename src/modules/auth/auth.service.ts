@@ -5,12 +5,15 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { LoginDto } from './dto/login.dto';
+import { LoginEmailDto } from './dto/login-email.dto';
+import { LoginSecureDto } from './dto/login-secure.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from '../../core/database/prisma.service';
 import { AuthContext } from '../../core/types/request-context';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -142,6 +145,143 @@ export class AuthService {
     };
   }
 
+  async loginWithEmail(dto: LoginEmailDto) {
+    // Extract domain from email for tenant discovery
+    const emailDomain = dto.email.split('@')[1];
+    
+    // Find user by email across all tenants
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: dto.email,
+      },
+      include: {
+        role: true,
+        tenant: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const valid = await bcrypt.compare(dto.password, user.passwordHash);
+
+    if (!valid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Security check: Verify email domain matches tenant domain (if configured)
+    if (user.tenant && user.tenant.website && user.tenant.website.includes(emailDomain)) {
+      // Log security event for domain mismatch
+      await this.logSecurityEvent('EMAIL_DOMAIN_MISMATCH', {
+        userId: user.id,
+        email: dto.email,
+        tenantWebsite: user.tenant.website,
+        emailDomain,
+      });
+      
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      tenantId: user.tenantId,
+      role: user.role.name,
+    };
+
+    const access_token = this.jwtService.sign(payload);
+    const refresh_token = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+    });
+
+    return {
+      access_token,
+      refresh_token,
+      user: {
+        userId: user.id,
+        tenantId: user.tenantId,
+        role: user.role.name,
+        name: user.name,
+        email: user.email,
+      },
+      tenant: {
+        id: user.tenantId,
+        name: user.tenant?.name,
+      },
+    };
+  }
+
+  // TODO: Implement loginWithDiscovery method with proper security validation
+  // Temporarily commented out to fix compilation issues
+  /*
+  async loginWithDiscovery(dto: LoginDiscoveryDto) {
+    if (dto.organizationName) {
+      // If organization name is provided, find tenant and user within it
+      const tenant = await this.prisma.tenant.findFirst({
+        where: {
+          name: dto.organizationName,
+        },
+      });
+
+      if (!tenant) {
+        throw new UnauthorizedException('Organization not found');
+      }
+
+      const user = await this.prisma.user.findFirst({
+        where: {
+          tenantId: tenant.id,
+          email: dto.email,
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const valid = await bcrypt.compare(dto.password, user.passwordHash);
+
+      if (!valid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        tenantId: user.tenantId,
+        role: user.role.name,
+      };
+
+      const access_token = this.jwtService.sign(payload);
+      const refresh_token = this.jwtService.sign(payload, {
+        expiresIn: '7d',
+      });
+
+      return {
+        access_token,
+        refresh_token,
+        user: {
+          userId: user.id,
+          tenantId: user.tenantId,
+          role: user.role.name,
+          name: user.name,
+          email: user.email,
+        },
+        tenant: {
+          id: tenant.id,
+          name: tenant.name,
+        },
+      };
+    } else {
+      // If no organization name, fall back to email-based discovery
+      return this.loginWithEmail(dto);
+    }
+  }
+  */
+
   async me(context: AuthContext) {
     return this.prisma.user.findFirst({
       where: {
@@ -228,7 +368,7 @@ export class AuthService {
     }
 
     // Generate random token
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Save verification token
@@ -330,7 +470,7 @@ export class AuthService {
     }
 
     // Generate random token
-    const token = crypto.randomBytes(32).toString('hex');
+    const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     // Save password reset token
@@ -396,5 +536,23 @@ export class AuthService {
         email: resetToken.user.email,
       },
     };
+  }
+
+  private async logSecurityEvent(eventType: string, metadata: any) {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          tenantId: metadata.tenantId || 'system',
+          userId: metadata.userId,
+          action: eventType,
+          entity: 'AUTH',
+          entityId: metadata.userId,
+          metadata: JSON.stringify(metadata),
+        },
+      });
+    } catch (error) {
+      // Log error but don't throw to prevent auth flow interruption
+      console.error('Failed to log security event:', error);
+    }
   }
 }

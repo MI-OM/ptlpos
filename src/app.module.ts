@@ -11,6 +11,7 @@ import { LoggingInterceptor } from './core/interceptors/logging.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CustomersModule } from './modules/customers/customers.module';
@@ -30,6 +31,7 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { EmailModule } from './modules/email/email.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { EmailModule } from './modules/email/email.module';
     AuditModule,
     AuthModule,
     BranchesModule,
+    CategoriesModule,
     ProductsModule,
     InventoryModule,
     CustomersModule,
@@ -61,6 +64,7 @@ import { EmailModule } from './modules/email/email.module';
     ImportsModule,
     ExportsModule,
     EmailModule,
+    MetricsModule,
   ],
   providers: [
     {

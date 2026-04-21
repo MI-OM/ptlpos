@@ -9,6 +9,7 @@ import { PrismaService } from '../../core/database/prisma.service';
 import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { generateA4InvoiceHTML, A4InvoiceData } from './templates/a4-invoice.template';
 
 @Injectable()
 export class InvoicesService {
@@ -252,5 +253,92 @@ export class InvoicesService {
           direction: payment.direction,
         })) ?? [],
     };
+  }
+
+  async generateA4InvoiceHTML(tenantId: string, invoiceId: string): Promise<string> {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        tenantId,
+      },
+      include: {
+        sale: {
+          include: {
+            customer: true,
+            items: {
+              include: {
+                product: true,
+                productVariant: true,
+              },
+            },
+            payments: true,
+            tenant: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    const invoiceData: A4InvoiceData = {
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        issueDate: invoice.issuedAt.toISOString().split('T')[0],
+        dueDate: invoice.issuedAt.toISOString().split('T')[0], // Use issuedAt as dueDate since no dueDate field
+        status: 'PAID', // Default status since invoice model doesn't have status field
+      },
+      tenant: {
+        name: invoice.sale.tenant.name,
+        email: invoice.sale.tenant.email || '',
+        phone: invoice.sale.tenant.phone || '',
+        address: invoice.sale.tenant.address || '',
+        city: invoice.sale.tenant.city || '',
+        state: invoice.sale.tenant.state || '',
+        zipCode: invoice.sale.tenant.zipCode || '',
+        country: invoice.sale.tenant.country || '',
+        logoUrl: invoice.sale.tenant.logoUrl || undefined,
+      },
+      customer: {
+        name: invoice.sale.customer?.name || 'Walk-in Customer',
+        email: invoice.sale.customer?.email || '',
+        phone: invoice.sale.customer?.phone || '',
+        address: '', // Customer model doesn't have address fields
+        city: '',
+        state: '',
+        zipCode: '',
+        country: '',
+      },
+      sale: {
+        id: invoice.sale.id,
+        saleNumber: invoice.sale.saleNumber,
+        saleDate: invoice.sale.createdAt.toISOString().split('T')[0],
+        subtotal: parseFloat(invoice.sale.subtotalAmount.toString()),
+        taxAmount: parseFloat(invoice.sale.taxAmount.toString()),
+        totalAmount: parseFloat(invoice.sale.totalAmount.toString()),
+        discountAmount: parseFloat(invoice.sale.discountAmount.toString()),
+        items: invoice.sale.items.map(item => ({
+          id: item.id,
+          productName: item.product.name,
+          productSku: item.product.sku || undefined,
+          quantity: parseFloat(item.quantity.toString()),
+          unitPrice: parseFloat(item.price.toString()),
+          totalPrice: parseFloat(item.lineTotal.toString()),
+          taxRate: parseFloat(item.taxRate.toString()),
+          taxAmount: parseFloat(item.taxAmount.toString()),
+        })),
+      },
+      payments: invoice.sale.payments.map(payment => ({
+        id: payment.id,
+        method: payment.method.toString(),
+        amount: parseFloat(payment.amount.toString()),
+        status: payment.status.toString(),
+        reference: payment.reference || undefined,
+      })),
+    };
+
+    return generateA4InvoiceHTML(invoiceData);
   }
 }

@@ -5,6 +5,8 @@ import { Public } from '../../core/decorators/public.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { LoginEmailDto } from './dto/login-email.dto';
+import { LoginDiscoveryDto } from './dto/login-discovery.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import {
@@ -57,12 +59,11 @@ export class AuthController {
   @Public()
   @Post('login')
   @ApiOperation({
-    summary: 'Login user',
-    description:
-      'Authenticate user and get access and refresh tokens. You need to know the tenant ID.',
+    summary: 'User login with tenant ID',
+    description: 'Authenticate user with email, password, and tenant ID',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Login successful',
     schema: {
       example: {
@@ -75,15 +76,80 @@ export class AuthController {
           name: 'John Doe',
           email: 'john@acme.com',
         },
+        tenant: {
+          id: 'clh7x1q0a0000qa10f0f0f0f0',
+          name: 'Acme Corporation',
+        },
       },
     },
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid email or password',
+    description: 'Invalid credentials',
   })
-  login(@Body() dto: LoginDto) {
+  async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('login/email')
+  @ApiOperation({
+    summary: 'User login with email only (automatic tenant discovery)',
+    description: 'Authenticate user with just email and password. System will automatically discover the tenant.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Login successful',
+    schema: {
+      example: {
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          userId: 'clh7x1q0b0000qa20f0f0f0',
+          tenantId: 'clh7x1q0a0000qa10f0f0f0f0',
+          role: 'ADMIN',
+          name: 'John Doe',
+          email: 'john@acme.com',
+        },
+        tenant: {
+          id: 'clh7x1q0a0000qa10f0f0f0f0',
+          name: 'Acme Corporation',
+        },
+      },
+    },
+  })
+  @Public()
+  @Post('login/email')
+  @ApiOperation({
+    summary: 'User login with email only (automatic tenant discovery)',
+    description: 'Authenticate user with just email and password. System will automatically discover the tenant.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Login successful',
+    schema: {
+      example: {
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        user: {
+          userId: 'clh7x1q0b0000qa20f0f0f0',
+          tenantId: 'clh7x1q0a0000qa10f0f0f0f0',
+          role: 'ADMIN',
+          name: 'John Doe',
+          email: 'john@acme.com',
+        },
+        tenant: {
+          id: 'clh7x1q0a0000qa10f0f0f0f0',
+          name: 'Acme Corporation',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid credentials',
+  })
+  async loginWithEmail(@Body() dto: LoginEmailDto) {
+    return this.authService.loginWithEmail(dto);
   }
 
   @Public()

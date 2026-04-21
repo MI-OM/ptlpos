@@ -4,23 +4,52 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InventoryTransactionType, ProductType, Prisma } from '@prisma/client';
+import { InventoryTransactionType, ProductType, Prisma, Product } from '@prisma/client';
+
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
 import { PrismaService } from '../../core/database/prisma.service';
-import { RedisService } from '../../core/database/redis.service';
 import { AuthContext } from '../../core/types/request-context';
-import { AuditService } from '../audit/audit.service';
-import { CompositeProductDto } from './dto/composite-product.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { CompositeProductDto } from './dto/composite-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UploadProductImageDto } from './dto/upload-product-image.dto';
+import { UploadProductImageResponseDto } from './dto/upload-product-image-response.dto';
+import { RedisService } from '../../core/database/redis.service';
+import { AuditService } from '../audit/audit.service';
+import { SupabaseStorageService } from './services/supabase-storage.service';
+import { SupabaseStorageConfigDto } from './dto/supabase-storage-config.dto';
 
 @Injectable()
 export class ProductsService {
+  private readonly supabaseStorage: SupabaseStorageService;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly audit: AuditService
-  ) {}
+  ) {
+    // Initialize Supabase Storage with configuration
+    const supabaseConfig: SupabaseStorageConfigDto = {
+      url: process.env.SUPABASE_URL || 'https://your-project.supabase.co',
+      serviceKey: process.env.SUPABASE_SERVICE_KEY || '',
+      bucket: 'product-images',
+      public: true,
+      allowedTypes: ['jpg', 'jpeg', 'png', 'webp'],
+      maxSize: 5242880, // 5MB
+    };
+    this.supabaseStorage = new SupabaseStorageService(supabaseConfig);
+  }
 
   async findAll(tenantId: string, query: QueryProductsDto) {
     const page = query.page ?? 1;
@@ -34,6 +63,7 @@ export class ProductsService {
       `q:${normalizedQuery ?? ''}`,
       `sku:${normalizedSku ?? ''}`,
       `type:${query.type ?? ''}`,
+      `categoryId:${query.categoryId ?? ''}`,
     ].join(':');
     const cached = await this.redis.get(cacheKey);
 
@@ -45,6 +75,7 @@ export class ProductsService {
     const where: Prisma.ProductWhereInput = {
       tenantId,
       type: query.type,
+      categoryId: query.categoryId,
       sku: normalizedSku
         ? {
             contains: normalizedSku,
@@ -89,34 +120,46 @@ export class ProductsService {
         : undefined,
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        include: { variants: true },
-        orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          variants: true,
+          inventoryRows: true,
+          category: true,
+        },
       }),
       this.prisma.product.count({ where }),
     ]);
 
-    const response = {
-      data: items,
-      meta: {
+    const result = {
+      data: products,
+      pagination: {
         page,
         limit,
         total,
+        pages: Math.ceil(total / limit),
       },
     };
 
-    await this.redis.set(cacheKey, JSON.stringify(response), 60);
-    return response;
+    await this.redis.set(cacheKey, JSON.stringify(result), 300);
+    return result;
   }
 
-  async findOneOrThrow(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string) {
     const product = await this.prisma.product.findFirst({
       where: { id, tenantId },
-      include: { variants: true },
+      include: {
+        variants: true,
+        inventoryRows: true,
+        category: true,
+        compositeParent: {
+          include: { child: true },
+        },
+      },
     });
 
     if (!product) {
@@ -127,31 +170,35 @@ export class ProductsService {
   }
 
   async create(context: AuthContext, dto: CreateProductDto) {
-    if (dto.type === ProductType.VARIANT && (!dto.variants || dto.variants.length === 0)) {
-      throw new BadRequestException('Variant products require at least one variant');
-    }
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        tenantId: context.tenantId,
+        sku: dto.sku,
+      },
+    });
 
-    if (dto.type !== ProductType.VARIANT && dto.variants?.length) {
-      throw new BadRequestException('Only variant products can include variants');
+    if (existingProduct) {
+      throw new ConflictException('Product with this SKU already exists');
     }
 
     const product = await this.prisma.$transaction(async tx => {
       const createdProduct = await tx.product.create({
         data: {
           tenantId: context.tenantId,
+          categoryId: dto.categoryId,
           name: dto.name,
           sku: dto.sku,
           imageUrl: dto.imageUrl,
           type: dto.type,
           price: dto.price,
-          cost: dto.cost,
+          cost: dto.cost ?? 0,
           taxRate: dto.taxRate ?? 0,
         },
       });
 
-      if (dto.type === ProductType.VARIANT && dto.variants) {
+      if (dto.variants && dto.variants.length > 0) {
         for (const variant of dto.variants) {
-          const createdVariant = await tx.productVariant.create({
+          await tx.productVariant.create({
             data: {
               productId: createdProduct.id,
               name: variant.name,
@@ -159,63 +206,32 @@ export class ProductsService {
               price: variant.price,
             },
           });
-
-          await tx.inventory.create({
-            data: {
-              tenantId: context.tenantId,
-              branchId: context.branchId,
-              productId: createdProduct.id,
-              productVariantId: createdVariant.id,
-              quantity: variant.openingQuantity ?? 0,
-            },
-          });
-
-          if ((variant.openingQuantity ?? 0) > 0) {
-            await tx.inventoryTransaction.create({
-              data: {
-                tenantId: context.tenantId,
-                branchId: context.branchId,
-                productId: createdProduct.id,
-                productVariantId: createdVariant.id,
-                type: InventoryTransactionType.OPENING,
-                quantity: variant.openingQuantity ?? 0,
-                balanceAfter: variant.openingQuantity ?? 0,
-                referenceType: 'product',
-                referenceId: createdProduct.id,
-              },
-            });
-          }
-        }
-      } else {
-        await tx.inventory.create({
-          data: {
-            tenantId: context.tenantId,
-            branchId: context.branchId,
-            productId: createdProduct.id,
-            quantity: dto.openingQuantity ?? 0,
-          },
-        });
-
-        if ((dto.openingQuantity ?? 0) > 0) {
-          await tx.inventoryTransaction.create({
-            data: {
-              tenantId: context.tenantId,
-              branchId: context.branchId,
-              productId: createdProduct.id,
-              type: InventoryTransactionType.OPENING,
-              quantity: dto.openingQuantity ?? 0,
-              balanceAfter: dto.openingQuantity ?? 0,
-              referenceType: 'product',
-              referenceId: createdProduct.id,
-            },
-          });
         }
       }
 
-      return tx.product.findUniqueOrThrow({
-        where: { id: createdProduct.id },
-        include: { variants: true },
+      await tx.inventory.create({
+        data: {
+          tenantId: context.tenantId,
+          productId: createdProduct.id,
+          quantity: dto.openingQuantity ?? 0,
+        },
       });
+
+      if ((dto.openingQuantity ?? 0) > 0) {
+        await tx.inventoryTransaction.create({
+          data: {
+            tenantId: context.tenantId,
+            productId: createdProduct.id,
+            type: InventoryTransactionType.OPENING,
+            quantity: dto.openingQuantity ?? 0,
+            balanceAfter: dto.openingQuantity ?? 0,
+            referenceType: 'product',
+            referenceId: createdProduct.id,
+          },
+        });
+      }
+
+      return createdProduct;
     });
 
     await this.redis.del(`tenant:${context.tenantId}:products:page:1:limit:20`);
@@ -229,24 +245,32 @@ export class ProductsService {
         type: dto.type,
       },
     });
-
     return product;
   }
 
   async update(context: AuthContext, id: string, dto: UpdateProductDto) {
-    await this.findOneOrThrow(context.tenantId, id);
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        id,
+        tenantId: context.tenantId,
+      },
+    });
 
-    const product = await this.prisma.product.update({
+    if (!existingProduct) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const updatedProduct = await this.prisma.product.update({
       where: { id },
       data: {
         name: dto.name,
         sku: dto.sku,
         imageUrl: dto.imageUrl,
+        categoryId: dto.categoryId,
         price: dto.price,
         cost: dto.cost,
         taxRate: dto.taxRate,
       },
-      include: { variants: true },
     });
 
     await this.redis.del(`tenant:${context.tenantId}:products:page:1:limit:20`);
@@ -255,15 +279,169 @@ export class ProductsService {
       userId: context.userId,
       action: 'PRODUCT_UPDATED',
       entity: 'Product',
-      entityId: id,
-      metadata: dto as Prisma.JsonObject,
+      entityId: updatedProduct.id,
+      metadata: {
+        changes: dto,
+      },
     });
 
-    return product;
+    return updatedProduct;
+  }
+
+  async uploadProductImage(
+    user: AuthContext,
+    productId: string,
+    uploadDto: UploadProductImageDto,
+  ) {
+    if (!uploadDto.file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    try {
+      const uploadResult = await this.supabaseStorage.uploadProductImage(
+        productId,
+        uploadDto.file as MulterFile,
+        {
+          alt: uploadDto.metadata?.alt || '',
+          caption: uploadDto.metadata?.caption || '',
+          tags: uploadDto.metadata?.tags || [],
+        },
+      );
+
+      await this.prisma.product.update({
+        where: {
+          id: productId,
+          tenantId: user.tenantId,
+        },
+        data: {
+          imageUrl: uploadResult.imageUrl,
+          updatedAt: new Date(),
+        },
+      });
+
+      await this.audit.log({
+        tenantId: user.tenantId,
+        userId: user.userId,
+        action: 'UPDATE',
+        entity: 'PRODUCT',
+        entityId: productId,
+        metadata: {
+          action: 'Product image uploaded to Supabase',
+          filename: uploadDto.file.originalname,
+          size: uploadDto.file.size,
+          imageUrl: uploadResult.imageUrl,
+        },
+      });
+
+      return uploadResult;
+    } catch (error) {
+      throw new BadRequestException(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async uploadMultipleProductImages(
+    user: AuthContext,
+    productId: string,
+    files: MulterFile[],
+    metadata?: {
+      alt?: string;
+      caption?: string;
+      tags?: string[];
+    },
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    try {
+      const uploadResults = await this.supabaseStorage.uploadMultipleProductImages(
+        productId,
+        files,
+        {
+          alt: metadata?.alt || '',
+          caption: metadata?.caption || '',
+          tags: metadata?.tags || [],
+        },
+      );
+
+      await this.audit.log({
+        tenantId: user.tenantId,
+        userId: user.userId,
+        action: 'UPDATE',
+        entity: 'PRODUCT',
+        entityId: productId,
+        metadata: {
+          action: 'Multiple product images uploaded to Supabase',
+          fileCount: files.length,
+          filenames: files.map(f => f.originalname),
+        },
+      });
+
+      return uploadResults;
+    } catch (error) {
+      throw new BadRequestException(`Failed to upload images: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async deleteProductImage(
+    user: AuthContext,
+    productId: string,
+    imageId: string,
+  ) {
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundException('Product not found');
+    }
+
+    try {
+      await this.supabaseStorage.deleteProductImage(imageId);
+
+      await this.prisma.product.update({
+        where: {
+          id: productId,
+          tenantId: user.tenantId,
+        },
+        data: {
+          imageUrl: null,
+          updatedAt: new Date(),
+        },
+      });
+
+      await this.audit.log({
+        tenantId: user.tenantId,
+        userId: user.userId,
+        action: 'UPDATE',
+        entity: 'PRODUCT',
+        entityId: productId,
+        metadata: {
+          action: 'Product image deleted from Supabase',
+          imageId: imageId,
+        },
+      });
+
+      return { success: true };
+    } catch (error) {
+      throw new BadRequestException(`Failed to delete image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async remove(context: AuthContext, id: string) {
-    await this.findOneOrThrow(context.tenantId, id);
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        id,
+        tenantId: context.tenantId,
+      },
+    });
+
+    if (!existingProduct) {
+      throw new NotFoundException('Product not found');
+    }
 
     await this.prisma.product.delete({
       where: { id },
@@ -286,7 +464,6 @@ export class ProductsService {
       throw new BadRequestException('Composite products require at least one component');
     }
 
-    // Verify all component products exist and belong to the tenant
     const componentIds = dto.components.map(c => c.productId);
     const components = await this.prisma.product.findMany({
       where: {
@@ -313,7 +490,6 @@ export class ProductsService {
         },
       });
 
-      // Add composite components
       for (const component of dto.components) {
         await tx.compositeProductItem.create({
           data: {
@@ -324,7 +500,6 @@ export class ProductsService {
         });
       }
 
-      // Create inventory row
       await tx.inventory.create({
         data: {
           tenantId: context.tenantId,
@@ -333,7 +508,6 @@ export class ProductsService {
         },
       });
 
-      // Create opening inventory transaction
       if ((dto.openingQuantity ?? 0) > 0) {
         await tx.inventoryTransaction.create({
           data: {
@@ -405,7 +579,6 @@ export class ProductsService {
   async getCompositeWithInventory(tenantId: string, productId: string) {
     const product = await this.getComposite(tenantId, productId);
 
-    // Get inventory levels for all components
     const components = await Promise.all(
       product.compositeParent.map(async item => {
         const componentInventory = await this.prisma.inventory.findFirst({
@@ -426,9 +599,8 @@ export class ProductsService {
     );
 
     return {
-      ...product,
-      compositeParent: components,
-      allComponentsAvailable: components.every(c => c.canFulfill),
+      product,
+      components,
     };
   }
 
@@ -440,62 +612,47 @@ export class ProductsService {
   ) {
     const composite = await tx.product.findUnique({
       where: { id: compositeProductId },
-      include: {
-        compositeParent: true,
-      },
+      include: { compositeParent: true },
     });
 
     if (!composite) {
       throw new NotFoundException('Composite product not found');
     }
 
-    if (composite.type !== ProductType.COMPOSITE) {
-      throw new BadRequestException('Product is not a composite product');
-    }
-
-    // Deduct each component from inventory
-    for (const component of composite.compositeParent) {
-      const inventory = await tx.inventory.findFirst({
+    for (const item of composite.compositeParent) {
+      const componentInventory = await tx.inventory.findFirst({
         where: {
           tenantId,
-          productId: component.childProductId,
+          productId: item.childProductId,
           productVariantId: null,
         },
       });
 
-      if (!inventory) {
-        throw new NotFoundException(
-          `Inventory not found for component product ${component.childProductId}`
-        );
+      if (!componentInventory) {
+        throw new BadRequestException(`Component inventory not found for product: ${item.childProductId}`);
       }
 
-      // Calculate total quantity to deduct (component quantity * sale quantity)
-      const totalToDeduct = new Prisma.Decimal(component.quantity).mul(quantity);
-      const nextQuantity = new Prisma.Decimal(inventory.quantity).sub(totalToDeduct);
-
-      if (nextQuantity.lessThan(0)) {
-        throw new ConflictException(
-          `Insufficient stock for component product. Need ${totalToDeduct}, have ${inventory.quantity}`
-        );
+      const requiredQuantity = item.quantity * quantity;
+      if (componentInventory.quantity < requiredQuantity) {
+        throw new BadRequestException(`Insufficient inventory for component: ${item.childProductId}`);
       }
 
-      // Update component inventory
       await tx.inventory.update({
-        where: { id: inventory.id },
-        data: { quantity: nextQuantity },
+        where: { id: componentInventory.id },
+        data: {
+          quantity: componentInventory.quantity - requiredQuantity,
+        },
       });
 
-      // Record transaction for each component
       await tx.inventoryTransaction.create({
         data: {
           tenantId,
-          productId: component.childProductId,
+          productId: item.childProductId,
           type: InventoryTransactionType.SALE,
-          quantity: totalToDeduct.mul(-1),
-          balanceAfter: nextQuantity,
-          referenceType: 'composite_sale',
+          quantity: -requiredQuantity,
+          balanceAfter: componentInventory.quantity - requiredQuantity,
+          referenceType: 'sale',
           referenceId: compositeProductId,
-          note: `Deducted for composite product sale (${quantity}x)`,
         },
       });
     }

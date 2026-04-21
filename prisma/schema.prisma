@@ -85,6 +85,7 @@ model Tenant {
   zipCode               String?
   country               String?
   users                 User[]
+  categories            Category[]
   products              Product[]
   inventories           Inventory[]
   inventoryTransactions InventoryTransaction[]
@@ -168,9 +169,24 @@ model User {
   @@unique([tenantId, email])
 }
 
+model Category {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  isActive    Boolean   @default(true)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([tenantId, name])
+}
+
 model Product {
   id                String                 @id @default(cuid())
   tenantId          String
+  categoryId        String?
   name              String
   sku               String?
   imageUrl          String?
@@ -179,6 +195,7 @@ model Product {
   cost              Decimal                @db.Decimal(14, 2)
   taxRate           Decimal                @default(0) @db.Decimal(5, 2)
   tenant            Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category          Category?              @relation(fields: [categoryId], references: [id])
   variants          ProductVariant[]
   inventoryRows     Inventory[]
   saleItems         SaleItem[]

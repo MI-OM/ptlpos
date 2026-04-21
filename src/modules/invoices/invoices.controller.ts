@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { InvoicesService } from './invoices.service';
+import { Response } from 'express';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -25,5 +26,18 @@ export class InvoicesController {
   @Post()
   create(@CurrentUser() user: AuthContext, @Body() dto: CreateInvoiceDto) {
     return this.invoicesService.create(user, dto);
+  }
+
+  @Get(':id/a4')
+  async generateA4Invoice(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @Res() res: Response
+  ) {
+    const html = await this.invoicesService.generateA4InvoiceHTML(user.tenantId, id);
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Disposition', `inline; filename="invoice-${id}.html"`);
+    res.send(html);
   }
 }

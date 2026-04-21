@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseInterceptors } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { UploadedFile, UploadedFiles } from '@nestjs/common';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Public } from '../../core/decorators/public.decorator';
@@ -9,7 +11,21 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { CompositeProductDto } from './dto/composite-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UploadProductImageDto } from './dto/upload-product-image.dto';
+import { UploadProductImageResponseDto } from './dto/upload-product-image-response.dto';
 import { ProductsService } from './products.service';
+
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
 
 @ApiBearerAuth()
 @Controller('products')
@@ -103,6 +119,54 @@ export class ProductsController {
   @Get('composite/:id/inventory')
   getCompositeWithInventory(@CurrentUser() user: AuthContext, @Param('id') id: string) {
     return this.productsService.getCompositeWithInventory(user.tenantId, id);
+  }
+
+  @ApiOperation({ summary: 'Upload product image' })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product image uploaded successfully',
+    type: UploadProductImageResponseDto,
+  })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Post(':id/upload-image')
+  uploadProductImage(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @Body() uploadDto: UploadProductImageDto,
+  ) {
+    return this.productsService.uploadProductImage(user, id, uploadDto);
+  }
+
+  @ApiOperation({ summary: 'Upload multiple product images' })
+  @ApiResponse({ status: 200, description: 'Images uploaded successfully', type: UploadProductImageResponseDto })
+  @UseInterceptors(FilesInterceptor('files'))
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Post(':id/upload-images')
+  async uploadMultipleProductImages(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @UploadedFiles() files: MulterFile[],
+    @Body() metadata?: { alt?: string; caption?: string; tags?: string[] },
+  ) {
+    return this.productsService.uploadMultipleProductImages(user, id, files, metadata);
+  }
+
+  @ApiOperation({ summary: 'Delete product image' })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiParam({ name: 'imageId', description: 'Image ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product image deleted successfully',
+  })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Delete(':id/images/:imageId')
+  deleteProductImage(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.productsService.deleteProductImage(user, id, imageId);
   }
 
   @ApiOperation({ summary: 'Delete a product' })

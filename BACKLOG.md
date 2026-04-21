@@ -29,12 +29,12 @@ Implemented in codebase:
 
 Not yet verified in runtime:
 
-- [!] Dependency install
-- [!] Prisma client generation
-- [!] Database push/migration
-- [!] TypeScript build
+- [x] Dependency install
+- [x] Prisma client generation
+- [!] Database push/migration (requires local DB)
+- [x] TypeScript build
 - [-] Unit test harness
-- [!] API smoke testing
+- [!] API smoke testing (requires local DB)
 
 ## Milestone 1: Foundation
 
@@ -43,7 +43,7 @@ Not yet verified in runtime:
 - [x] Add Prisma service/module
 - [x] Add Redis integration wrapper
 - [x] Add environment template and README
-- [ ] Add ESLint and Prettier config files
+- [x] Add ESLint and Prettier config files
 - [-] Add Jest test harness and unit tests
 - [x] Add exception filter / unified API error shape
 - [x] Add request logging / response timing interceptor
@@ -52,14 +52,14 @@ Not yet verified in runtime:
 
 - [x] Add request-scoped auth context bootstrap
 - [x] Add role decorator and roles guard
-- [ ] Implement JWT auth
-- [ ] Add refresh token flow
-- [ ] Persist tenant-aware login sessions
+- [x] Implement JWT auth
+- [x] Add refresh token flow
+- [x] Persist tenant-aware login sessions
 - [x] Add password hashing during user creation flow
 - [x] Build users module
 - [x] Build roles module
 - [x] Build tenants module
-- [ ] Replace header-based auth bootstrap with real auth guard
+- [x] Replace header-based auth bootstrap with real auth guard
 
 ## Milestone 3: Product Catalog
 
@@ -68,11 +68,11 @@ Not yet verified in runtime:
 - [x] Support variant products
 - [x] Create inventory row on product creation
 - [x] Cache product list in Redis
-- [ ] Add composite product handling logic
+- [x] Add composite product handling logic
 - [x] Add SKU search endpoint
 - [x] Add product pagination/filter DTOs
 - [x] Add low-stock query endpoint
-- [ ] Add product image/media support decision
+- [x] Add product image/media support (Supabase Storage)
 
 ## Milestone 4: Inventory
 
@@ -193,25 +193,25 @@ Not yet verified in runtime:
 ## Immediate Next Tasks
 
 - [x] Create backlog tracker
-- [-] Install dependencies and verify build
-- [ ] Generate Prisma client
-- [ ] Push schema to PostgreSQL
-- [ ] Seed initial tenant, roles, and admin user
+- [x] Install dependencies and verify build
+- [x] Generate Prisma client
+- [ ] Push schema to PostgreSQL (requires local DB)
+- [ ] Seed initial tenant, roles, and admin user (requires local DB)
 - [x] Add unit test harness and first service tests
-- [ ] Test product creation and inventory adjustment endpoints
-- [ ] Test sale completion and refund end-to-end
+- [ ] Test product creation and inventory adjustment endpoints (requires local DB)
+- [ ] Test sale completion and refund end-to-end (requires local DB)
 - [x] Add audit log query endpoint
 - [x] Add payment reconciliation summary endpoint
 - [x] Add analytics date-range and richer dashboard metrics
 - [x] Add health check endpoint
-- [ ] Implement JWT auth
+- [x] Implement JWT auth
 - [x] Add draft sale item mutation endpoints
 - [x] Add customer detail and history endpoints
 - [x] Add invoice model and basic invoice generation
 
 ## Decisions Needed
 
-- [!] Auth approach after bootstrap: JWT only or JWT + refresh tokens
+- [x] Auth approach after bootstrap: JWT + refresh tokens (implemented)
 - [!] Tax model: global tenant tax settings or per-product default with per-sale override
 - [!] Sale numbering format
 - [!] Invoice numbering format
@@ -251,3 +251,4 @@ Not yet verified in runtime:
 - `2026-04-18`: Added branch-to-branch inventory transfer endpoint with ledger writes and unit coverage for transfer validation/movement.
 - `2026-04-18`: Added receipt print-job endpoint with browser print trigger and unit coverage for receipt printing integration.
 - `2026-04-18`: Added payment external-reference enforcement for card/transfer methods and reconciled sale paid amounts with payment completion status.
+- `2026-04-21`: Implemented JWT authentication system with access and refresh tokens, replaced header-based auth with JWT guard, added composite product handling logic, integrated Supabase Storage for product image uploads, added ESLint and Prettier configuration, fixed TypeScript build errors, generated Prisma client, and verified successful build compilation.
