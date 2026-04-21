@@ -5,7 +5,10 @@
     "skipDefaultLibCheck": true,
     "noImplicitAny": false,
     "strict": false,
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "rootDir": "./src",
+    "module": "es2020",
+    "moduleResolution": "node"
   },
   "exclude": [
     "node_modules",
