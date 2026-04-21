@@ -9,7 +9,6 @@
     "rootDir": "./src",
     "module": "es2020",
     "moduleResolution": "bundler",
-    "baseUrl": "./",
     "types": ["node"]
   },
   "exclude": [
