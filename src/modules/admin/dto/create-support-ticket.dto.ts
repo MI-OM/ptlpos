@@ -1,6 +1,21 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString, IsUUID } from 'class-validator';
-import { TicketPriority, TicketCategory } from '@prisma/client';
+
+enum TicketPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+enum TicketCategory {
+  BILLING = 'BILLING',
+  TECHNICAL = 'TECHNICAL',
+  FEATURE_REQUEST = 'FEATURE_REQUEST',
+  BUG_REPORT = 'BUG_REPORT',
+  ACCOUNT_ISSUE = 'ACCOUNT_ISSUE',
+  OTHER = 'OTHER',
+}
 
 export class CreateSupportTicketDto {
   @ApiProperty({

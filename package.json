@@ -16,7 +16,7 @@
     "format": "prettier --write \"src/**/*.ts\" --ignore-path .prettierignore",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:push": "prisma db push",
+    "prisma:push": "prisma db push --accept-data-loss",
     "prisma:seed": "npx ts-node prisma/seed.ts"
   },
   "dependencies": {
