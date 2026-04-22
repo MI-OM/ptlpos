@@ -12,7 +12,7 @@ import { ValidationError } from 'class-validator';
 export class ValidationExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(ValidationExceptionFilter.name);
 
-  catch(exception: ValidationError, host: ArgumentsHost) {
+  catch(exception: ValidationError[], host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest();
