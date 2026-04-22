@@ -65,6 +65,6 @@
     "typescript-eslint": "^8.58.2"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "npx ts-node --transpile-only prisma/seed.ts"
   }
 }
