@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Patch } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Public } from '../../core/decorators/public.decorator';
 import { AuthContext } from '../../core/types/request-context';
@@ -21,6 +22,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   @ApiOperation({
     summary: 'Register new organization and create admin user',
@@ -57,6 +59,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @ApiOperation({
     summary: 'User login with tenant ID',
@@ -91,33 +94,8 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @Post('login/email')
-  @ApiOperation({
-    summary: 'User login with email only (automatic tenant discovery)',
-    description: 'Authenticate user with just email and password. System will automatically discover the tenant.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Login successful',
-    schema: {
-      example: {
-        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        user: {
-          userId: 'clh7x1q0b0000qa20f0f0f0',
-          tenantId: 'clh7x1q0a0000qa10f0f0f0f0',
-          role: 'ADMIN',
-          name: 'John Doe',
-          email: 'john@acme.com',
-        },
-        tenant: {
-          id: 'clh7x1q0a0000qa10f0f0f0f0',
-          name: 'Acme Corporation',
-        },
-      },
-    },
-  })
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login/email')
   @ApiOperation({
     summary: 'User login with email only (automatic tenant discovery)',

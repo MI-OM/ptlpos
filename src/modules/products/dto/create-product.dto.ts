@@ -58,13 +58,13 @@ export class CreateProductDto {
   @IsString()
   name!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Product SKU (unique identifier)',
     example: 'SHIRT-WHT-SML',
+    required: true,
   })
-  @IsOptional()
   @IsString()
-  sku?: string;
+  sku!: string;
 
   @ApiPropertyOptional({
     description: 'Product image URL',
@@ -113,7 +113,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Product category ID',
-    example: 'category-123',
+    example: 'cmo9mytni0001tvl4oi7c56we',
   })
   @IsOptional()
   @IsString()

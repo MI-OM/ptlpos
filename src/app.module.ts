@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './core/database/prisma.module';
 import { RedisModule } from './core/database/redis.module';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
+import { ValidationExceptionFilter } from './core/filters/validation-exception.filter';
 import { JwtAuthGuard } from './core/guards/jwt-auth.guard';
 import { RequestContextGuard } from './core/guards/request-context.guard';
 import { RolesGuard } from './core/guards/roles.guard';
@@ -39,6 +41,17 @@ import { MetricsModule } from './modules/metrics/metrics.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+      {
+        ttl: 60000, // 1 minute  
+        limit: 10, // 10 requests per minute for auth endpoints
+        name: 'auth',
+      },
+    ]),
     PrismaModule,
     RedisModule,
     AuditModule,
@@ -69,6 +82,10 @@ import { MetricsModule } from './modules/metrics/metrics.module';
   providers: [
     {
       provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
     {
@@ -82,6 +99,10 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: ValidationExceptionFilter,
     },
     {
       provide: APP_FILTER,

@@ -1,0 +1,11 @@
+Test Name,Total Requests,Successful,Failed,Avg Response Time (ms),Min Response Time (ms),Max Response Time (ms),Success Rate (%)
+Load_Test_Branches_GET,20,20,0,2743,950,4513,100
+Load_Test_Inventory_GET,20,20,0,1332,965,1655,100
+Load_Test_Categories_GET,20,20,0,1387,1008,1770,100
+Load_Test_Customers_GET,20,20,0,1512,1350,1987,100
+Load_Test_Products_GET,20,20,0,1508,1059,1778,100
+Stress_Test_Inventory_High_Concurrency,50,50,0,1542,1134,1897,100
+Stress_Test_Mixed_Operations,100,100,0,2205,0,0,100
+Stress_Test_Products_High_Concurrency,50,50,0,1698,1009,2206,100
+Auth_Load_Test,50,0,0,1485,1158,2087,0
+Stress_Test_Branches_High_Concurrency,30,30,0,1453,1091,1781,100

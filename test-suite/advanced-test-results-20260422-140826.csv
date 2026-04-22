@@ -1,0 +1,17 @@
+Test Name,Total Requests,Successful,Failed,Avg Response Time (ms),Min Response Time (ms),Max Response Time (ms),Success Rate (%)
+GET_Inventory_Low_Stock,15,15,0,2008,1279,2317,100
+POST_Products_Create,10,1,9,1722,1625,1834,10
+Error_Invalid_Token,5,0,5,1476,1440,1505,0
+Sustained_Load_Test,2347,2347,0,0,0,0,100
+Basic_Inventory_Load,25,25,0,1989,1028,2646,100
+Error_Invalid_Method,5,0,5,1825,1744,1934,0
+GET_Products_Pagination,15,15,0,2032,1865,2135,100
+POST_Categories_Create,10,1,9,1886,1782,2095,10
+Error_Missing_Token,5,0,5,1565,1534,1579,0
+Basic_Branches_Load,25,25,0,1820,1161,2316,100
+GET_Categories_Active,15,15,0,1718,1349,2106,100
+POST_Customers_Create,10,0,10,1322,1166,1426,0
+Error_Invalid_Endpoint,5,0,5,1706,1688,1720,0
+POST_Branches_Create,10,0,10,1312,1132,1668,0
+Basic_Products_Load,25,25,0,1928,1283,2510,100
+GET_Products_Filter_Type,15,15,0,1975,1821,2124,100

@@ -126,10 +126,45 @@ export class ProductsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          variants: true,
-          inventoryRows: true,
-          category: true,
+        select: {
+          id: true,
+          tenantId: true,
+          name: true,
+          sku: true,
+          imageUrl: true,
+          type: true,
+          price: true,
+          cost: true,
+          taxRate: true,
+          categoryId: true,
+          createdAt: true,
+          updatedAt: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          // Only include variants and inventory when needed
+          ...(query.includeVariants && {
+            variants: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                price: true,
+              },
+            },
+          }),
+          ...(query.includeInventory && {
+            inventoryRows: {
+              select: {
+                id: true,
+                quantity: true,
+                branchId: true,
+              },
+            },
+          }),
         },
       }),
       this.prisma.product.count({ where }),

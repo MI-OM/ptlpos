@@ -20,9 +20,31 @@ export class InventoryService {
         tenantId,
         branchId,
       },
-      include: {
-        product: true,
-        productVariant: true,
+      select: {
+        id: true,
+        tenantId: true,
+        branchId: true,
+        productId: true,
+        productVariantId: true,
+        quantity: true,
+        createdAt: true,
+        updatedAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            type: true,
+            price: true,
+          },
+        },
+        productVariant: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+          },
+        },
       },
       orderBy: {
         updatedAt: 'desc',
@@ -39,9 +61,31 @@ export class InventoryService {
           lte: threshold,
         },
       },
-      include: {
-        product: true,
-        productVariant: true,
+      select: {
+        id: true,
+        tenantId: true,
+        branchId: true,
+        productId: true,
+        productVariantId: true,
+        quantity: true,
+        createdAt: true,
+        updatedAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            type: true,
+            price: true,
+          },
+        },
+        productVariant: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+          },
+        },
       },
       orderBy: [
         {
