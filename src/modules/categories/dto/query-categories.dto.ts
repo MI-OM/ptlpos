@@ -44,6 +44,7 @@ export class QueryCategoriesDto {
     required: false,
   })
   @IsOptional()
+  @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
 }
