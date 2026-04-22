@@ -232,9 +232,10 @@ export class AuthController {
   })
   requestEmailVerification(
     @Body() dto: RequestEmailVerificationDto,
-    @CurrentUser() user: AuthContext
+    @CurrentUser() user?: AuthContext
   ) {
-    return this.authService.requestEmailVerification(user.tenantId, dto.email);
+    // For public endpoint, find tenant by email first
+    return this.authService.requestEmailVerification(dto.email);
   }
 
   @Public()

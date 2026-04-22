@@ -351,7 +351,33 @@ export class AuthService {
   /**
    * Generate and send email verification token
    */
-  async requestEmailVerification(tenantId: string, email: string) {
+  async requestEmailVerification(emailOrTenantId: string, email?: string) {
+    // Handle email-only request (for public endpoint)
+    if (!email) {
+      email = emailOrTenantId;
+      // Find tenant by user email
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        include: { tenant: true },
+      });
+
+      if (!user) {
+        throw new BadRequestException('User not found with this email');
+      }
+
+      const tenantId = user.tenantId;
+      return this.generateVerificationToken(tenantId, email);
+    }
+
+    // Handle tenantId + email request (for authenticated endpoint)
+    const tenantId = emailOrTenantId;
+    return this.generateVerificationToken(tenantId, email);
+  }
+
+  /**
+   * Helper method to generate verification token
+   */
+  private async generateVerificationToken(tenantId: string, email: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
     });
