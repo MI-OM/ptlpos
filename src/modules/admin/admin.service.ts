@@ -1,0 +1,595 @@
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../core/database/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import {
+  SubscriptionStatus,
+  TenantStatus,
+  TicketStatus,
+  BillingCycle,
+  TicketCategory,
+  TicketPriority,
+} from '@prisma/client';
+import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { CreateSupportTicketDto } from './dto/create-support-ticket.dto';
+import { AssignTicketDto } from './dto/assign-ticket.dto';
+
+@Injectable()
+export class AdminService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
+
+  // TENANT MANAGEMENT
+  async getTenants(params: {
+    page: number;
+    limit: number;
+    status?: string;
+    search?: string;
+  }) {
+    const where: any = {};
+    
+    if (params.status) {
+      where.status = params.status as TenantStatus;
+    }
+    
+    if (params.search) {
+      where.OR = [
+        { name: { contains: params.search, mode: 'insensitive' } },
+        { email: { contains: params.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (params.page - 1) * params.limit;
+
+    const [tenants, total] = await Promise.all([
+      this.prisma.tenant.findMany({
+        where,
+        skip,
+        take: params.limit,
+        include: {
+          subscription: {
+            include: {
+              plan: true,
+            },
+          },
+          _count: {
+            select: {
+              users: true,
+              branches: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.tenant.count({ where }),
+    ]);
+
+    return {
+      data: tenants,
+      pagination: {
+        page: params.page,
+        limit: params.limit,
+        total,
+        totalPages: Math.ceil(total / params.limit),
+      },
+    };
+  }
+
+  async getTenant(id: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+      include: {
+        subscription: {
+          include: {
+            plan: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            status: true,
+            lastLoginAt: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+        branches: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            createdAt: true,
+          },
+          take: 10,
+        },
+        supportTickets: {
+          select: {
+            id: true,
+            subject: true,
+            status: true,
+            priority: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    return tenant;
+  }
+
+  async updateTenantStatus(id: string, updateTenantStatusDto: UpdateTenantStatusDto) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    const updatedTenant = await this.prisma.tenant.update({
+      where: { id },
+      data: {
+        status: updateTenantStatusDto.status,
+      },
+    });
+
+    // Update subscription status if tenant is suspended/deactivated
+    if (updateTenantStatusDto.status === TenantStatus.SUSPENDED) {
+      await this.prisma.subscription.update({
+        where: { tenantId: id },
+        data: { status: SubscriptionStatus.SUSPENDED },
+      });
+    }
+
+    await this.audit.log({
+      tenantId: id,
+      userId: null, // Admin action
+      action: 'UPDATE_TENANT_STATUS',
+      entity: 'Tenant',
+      entityId: id,
+      metadata: updateTenantStatusDto as any,
+    });
+
+    return updatedTenant;
+  }
+
+  async getTenantUsage(id: string) {
+    const usage = await this.prisma.usageMetrics.findMany({
+      where: { tenantId: id },
+      orderBy: { recordedAt: 'desc' },
+      take: 100,
+    });
+
+    const currentUsage = await this.prisma.tenant.findUnique({
+      where: { id },
+      select: {
+        _count: {
+          select: {
+            users: true,
+            branches: true,
+            products: true,
+            customers: true,
+          },
+        },
+      },
+    });
+
+    return {
+      currentUsage,
+      historicalUsage: usage,
+    };
+  }
+
+  // SUBSCRIPTION MANAGEMENT
+  async getPlans() {
+    return this.prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: { price: 'asc' },
+    });
+  }
+
+  async createPlan(createPlanDto: CreateSubscriptionDto) {
+    return this.prisma.subscriptionPlan.create({
+      data: createPlanDto,
+    });
+  }
+
+  async updatePlan(id: string, updatePlanDto: UpdateSubscriptionDto) {
+    return this.prisma.subscriptionPlan.update({
+      where: { id },
+      data: updatePlanDto,
+    });
+  }
+
+  async getSubscriptions(params: {
+    page: number;
+    limit: number;
+    status?: string;
+  }) {
+    const where: any = {};
+    
+    if (params.status) {
+      where.status = params.status as SubscriptionStatus;
+    }
+
+    const skip = (params.page - 1) * params.limit;
+
+    const [subscriptions, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where,
+        skip,
+        take: params.limit,
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+            },
+          },
+          plan: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
+
+    return {
+      data: subscriptions,
+      pagination: {
+        page: params.page,
+        limit: params.limit,
+        total,
+        totalPages: Math.ceil(total / params.limit),
+      },
+    };
+  }
+
+  async changeSubscription(id: string, changeSubscriptionDto: UpdateSubscriptionDto) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    const updatedSubscription = await this.prisma.subscription.update({
+      where: { id },
+      data: {
+        planId: changeSubscriptionDto.planId,
+        status: SubscriptionStatus.ACTIVE,
+        startDate: new Date(),
+        endDate: changeSubscriptionDto.endDate,
+      },
+    });
+
+    await this.audit.log({
+      tenantId: subscription.tenantId,
+      userId: null,
+      action: 'CHANGE_SUBSCRIPTION',
+      entity: 'Subscription',
+      entityId: id,
+      metadata: changeSubscriptionDto as any,
+    });
+
+    return updatedSubscription;
+  }
+
+  // SUPPORT SYSTEM
+  async getTickets(params: {
+    page: number;
+    limit: number;
+    status?: string;
+    assignedTo?: string;
+  }) {
+    const where: any = {};
+    
+    if (params.status) {
+      where.status = params.status as TicketStatus;
+    }
+    
+    if (params.assignedTo) {
+      where.assignedTo = params.assignedTo;
+    }
+
+    const skip = (params.page - 1) * params.limit;
+
+    const [tickets, total] = await Promise.all([
+      this.prisma.supportTicket.findMany({
+        where,
+        skip,
+        take: params.limit,
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          assignee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.supportTicket.count({ where }),
+    ]);
+
+    return {
+      data: tickets,
+      pagination: {
+        page: params.page,
+        limit: params.limit,
+        total,
+        totalPages: Math.ceil(total / params.limit),
+      },
+    };
+  }
+
+  async getTicket(id: string) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        messages: {
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    return ticket;
+  }
+
+  async createTicket(createTicketDto: CreateSupportTicketDto) {
+    return this.prisma.supportTicket.create({
+      data: {
+        ...createTicketDto,
+        status: TicketStatus.OPEN,
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async assignTicket(id: string, assignTicketDto: AssignTicketDto) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    const updatedTicket = await this.prisma.supportTicket.update({
+      where: { id },
+      data: {
+        assignedTo: assignTicketDto.assignedTo,
+        status: TicketStatus.IN_PROGRESS,
+      },
+    });
+
+    await this.audit.log({
+      tenantId: ticket.tenantId,
+      userId: null,
+      action: 'ASSIGN_TICKET',
+      entity: 'SupportTicket',
+      entityId: id,
+      metadata: assignTicketDto as any,
+    });
+
+    return updatedTicket;
+  }
+
+  async updateTicketStatus(id: string, updateStatusDto: { status: string; note?: string }) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    const updateData: any = {
+      status: updateStatusDto.status as TicketStatus,
+    };
+
+    if (updateStatusDto.status === TicketStatus.RESOLVED) {
+      updateData.resolvedAt = new Date();
+    }
+
+    const updatedTicket = await this.prisma.supportTicket.update({
+      where: { id },
+      data: updateData,
+    });
+
+    await this.audit.log({
+      tenantId: ticket.tenantId,
+      userId: null,
+      action: 'UPDATE_TICKET_STATUS',
+      entity: 'SupportTicket',
+      entityId: id,
+      metadata: updateStatusDto as any,
+    });
+
+    return updatedTicket;
+  }
+
+  // ANALYTICS
+  async getOverview() {
+    const [
+      totalTenants,
+      activeTenants,
+      totalSubscriptions,
+      activeSubscriptions,
+      openTickets,
+      totalRevenue,
+    ] = await Promise.all([
+      this.prisma.tenant.count(),
+      this.prisma.tenant.count({ where: { status: TenantStatus.ACTIVE } }),
+      this.prisma.subscription.count(),
+      this.prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
+      this.prisma.supportTicket.count({ where: { status: TicketStatus.OPEN } }),
+      this.prisma.subscription.aggregate({
+        _sum: { price: true },
+        where: { status: SubscriptionStatus.ACTIVE },
+      }),
+    ]);
+
+    return {
+      tenants: {
+        total: totalTenants,
+        active: activeTenants,
+      },
+      subscriptions: {
+        total: totalSubscriptions,
+        active: activeSubscriptions,
+      },
+      support: {
+        openTickets,
+      },
+      revenue: totalRevenue._sum.price || 0,
+    };
+  }
+
+  async getUsageAnalytics(period: 'daily' | 'weekly' | 'monthly') {
+    // Implementation for usage analytics based on period
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'daily':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days
+        break;
+      case 'weekly':
+        startDate = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // 12 weeks
+        break;
+      case 'monthly':
+        startDate = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000); // 12 months
+        break;
+    }
+
+    const usageMetrics = await this.prisma.usageMetrics.groupBy({
+      by: ['metric'],
+      where: {
+        recordedAt: {
+          gte: startDate,
+        },
+      },
+      _sum: {
+        value: true,
+      },
+    });
+
+    return usageMetrics;
+  }
+
+  async getRevenueAnalytics(period: 'daily' | 'weekly' | 'monthly') {
+    // Implementation for revenue analytics based on period
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'daily':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'weekly':
+        startDate = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'monthly':
+        startDate = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    const revenueData = await this.prisma.subscription.groupBy({
+      by: ['planId'],
+      where: {
+        startDate: {
+          gte: startDate,
+        },
+        status: SubscriptionStatus.ACTIVE,
+      },
+      _sum: {
+        price: true,
+      },
+      _count: true,
+    });
+
+    return revenueData;
+  }
+}

@@ -70,6 +70,20 @@ enum StocktakeStatus {
   CANCELLED
 }
 
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+  TRIAL
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
 model Tenant {
   id                    String             @id @default(cuid())
   name                  String
@@ -84,9 +98,16 @@ model Tenant {
   state                 String?
   zipCode               String?
   country               String?
+  status                TenantStatus       @default(ACTIVE)
+  subscriptionId        String?            @unique
+  settings              Json?              // Tenant-specific settings
+  metadata              Json?              // Additional tenant data
   users                 User[]
   categories            Category[]
   products              Product[]
+  subscription          Subscription?      @relation("TenantSubscription")
+  supportTickets        SupportTicket[]
+  usageMetrics          UsageMetrics[]
   inventories           Inventory[]
   inventoryTransactions InventoryTransaction[]
   lowStockAlerts        LowStockAlert[]
@@ -103,6 +124,9 @@ model Tenant {
   branches              Branch[]
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
+
+  @@index([status])
+  @@index([subscriptionId])
 }
 
 model Branch {
@@ -159,14 +183,22 @@ model User {
   email               String
   passwordHash        String              @map("password_hash")
   isEmailVerified     Boolean             @default(false)
+  status              UserStatus          @default(ACTIVE)
+  lastLoginAt         DateTime?
   tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   role                Role                @relation(fields: [roleId], references: [id])
   auditLogs           AuditLog[]
   passwordResetTokens PasswordResetToken[]
+  supportTickets      SupportTicket[]     @relation("TicketCreator")
+  assignedTickets     SupportTicket[]     @relation("TicketAssignee")
+  supportMessages     SupportMessage[]
+  adminAuditLogs      AdminAuditLog[]
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
   @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@index([email])
 }
 
 model Category {
@@ -527,4 +559,143 @@ model AuditLog {
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, entity, entityId, timestamp])
+}
+
+// Subscription Management
+model SubscriptionPlan {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal       @db.Decimal(10, 2)
+  billingCycle BillingCycle
+  isActive    Boolean       @default(true)
+  limits      Json          // { users: 10, branches: 5, products: 1000, ... }
+  features    Json          // ["inventory", "reports", "api_access", ... }
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  subscriptions Subscription[]
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+model Subscription {
+  id          String            @id @default(cuid())
+  tenantId    String            @unique
+  planId      String
+  status      SubscriptionStatus
+  startDate   DateTime
+  endDate     DateTime?
+  cancelledAt DateTime?
+  usage       Json              // Current usage metrics
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  
+  tenant      Tenant            @relation("TenantSubscription", fields: [tenantId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan  @relation(fields: [planId], references: [id])
+  
+  @@index([tenantId, status])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+}
+
+// Support System
+model SupportTicket {
+  id          String         @id @default(cuid())
+  tenantId    String
+  userId      String
+  subject     String
+  description String
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  category    TicketCategory
+  assignedTo  String?        // Admin user ID
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  resolvedAt  DateTime?
+  
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User           @relation("TicketCreator", fields: [userId], references: [id], onDelete: Cascade)
+  assignee    User?          @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  messages    SupportMessage[]
+  
+  @@index([tenantId, status])
+  @@index([assignedTo, status])
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  BILLING
+  TECHNICAL
+  FEATURE_REQUEST
+  BUG_REPORT
+  ACCOUNT_ISSUE
+  OTHER
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  senderId  String   // Can be tenant user or admin
+  content   String
+  isFromAdmin Boolean @default(false)
+  createdAt DateTime @default(now())
+  
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender    User          @relation(fields: [senderId], references: [id])
+  
+  @@index([ticketId, createdAt])
+}
+
+// Usage Tracking
+model UsageMetrics {
+  id          String   @id @default(cuid())
+  tenantId    String
+  metric      String   // "users", "branches", "products", "api_calls"
+  value       Int
+  recordedAt  DateTime @default(now())
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, metric, recordedAt])
+  @@index([tenantId, metric])
+}
+
+// Admin Actions Audit
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  action      String   // "suspend_tenant", "change_plan", "resolve_ticket"
+  targetId    String?  // Target entity ID
+  targetType  String?  // "tenant", "user", "subscription"
+  details     Json?    // Action details
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  admin       User     @relation(fields: [adminId], references: [id])
+  
+  @@index([adminId, action])
+  @@index([targetType, targetId])
 }
