@@ -445,13 +445,13 @@ Content-Type: application/json
   "name": "Office Bundle",
   "sku": "OFFICE-BUNDLE-001",
   "price": 1499.99,
-  "compositeParent": [
+  "components": [
     {
-      "childProductId": "laptop-pro",
+      "productId": "laptop-pro",
       "quantity": 1
     },
     {
-      "childProductId": "mouse-wireless",
+      "productId": "mouse-wireless",
       "quantity": 1
     }
   ]

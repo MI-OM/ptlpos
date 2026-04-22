@@ -464,6 +464,18 @@ export class ProductsService {
       throw new BadRequestException('Composite products require at least one component');
     }
 
+    // Check for existing SKU
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        tenantId: context.tenantId,
+        sku: dto.sku,
+      },
+    });
+
+    if (existingProduct) {
+      throw new ConflictException('Product with this SKU already exists');
+    }
+
     const componentIds = dto.components.map(c => c.productId);
     const components = await this.prisma.product.findMany({
       where: {
