@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { RoleName } from '@prisma/client';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -8,10 +9,13 @@ import { CreateStocktakeDto, RecordStocktakeCountsDto } from './dto/stocktake.dt
 import { TransferInventoryDto } from './dto/transfer-inventory.dto';
 import { InventoryService } from './inventory.service';
 
+@ApiTags('Inventory')
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  @ApiOperation({ summary: 'Get all inventory items' })
+  @ApiResponse({ status: 200, description: 'Inventory items retrieved successfully' })
   @Get()
   findAll(@CurrentUser() user: AuthContext) {
     return this.inventoryService.findAll(user.tenantId, user.branchId);
