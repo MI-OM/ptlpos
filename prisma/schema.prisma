@@ -263,6 +263,11 @@ model Inventory {
 
   @@unique([tenantId, branchId, productId, productVariantId])
   @@index([tenantId, branchId, productId])
+  @@index([tenantId, quantity])
+  @@index([branchId, quantity])
+  @@index([productId, quantity])
+  @@index([tenantId, updatedAt])
+  @@index([branchId, updatedAt])
 }
 
 model InventoryTransaction {

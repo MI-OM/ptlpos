@@ -10,6 +10,7 @@ import { JwtAuthGuard } from './core/guards/jwt-auth.guard';
 import { RequestContextGuard } from './core/guards/request-context.guard';
 import { RolesGuard } from './core/guards/roles.guard';
 import { LoggingInterceptor } from './core/interceptors/logging.interceptor';
+import { PerformanceInterceptor } from './core/interceptors/performance.interceptor';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
@@ -99,6 +100,10 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PerformanceInterceptor,
     },
     {
       provide: APP_FILTER,

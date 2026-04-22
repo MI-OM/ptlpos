@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InventoryTransactionType, Prisma, StocktakeStatus } from '@prisma/client';
 import { PrismaService } from '../../core/database/prisma.service';
+import { RedisService } from '../../core/database/redis.service';
 import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
 import { AdjustInventoryDto } from './dto/adjust-inventory.dto';
@@ -11,11 +12,20 @@ import { TransferInventoryDto } from './dto/transfer-inventory.dto';
 export class InventoryService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     private readonly audit: AuditService
   ) {}
 
   async findAll(tenantId: string, branchId?: string) {
-    return this.prisma.inventory.findMany({
+    const cacheKey = `inventory:${tenantId}:${branchId || 'all'}`;
+    
+    // Try to get from cache first
+    const cached = await this.redis.getJSON(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inventory = await this.prisma.inventory.findMany({
       where: {
         tenantId,
         branchId,
@@ -50,6 +60,10 @@ export class InventoryService {
         updatedAt: 'desc',
       },
     });
+
+    // Cache the result for 5 minutes
+    await this.redis.setJSON(cacheKey, inventory, 300);
+    return inventory;
   }
 
   async lowStock(tenantId: string, threshold = 10, branchId?: string) {
@@ -403,6 +417,9 @@ export class InventoryService {
     });
 
     await this.checkAndCreateAlerts(context.tenantId);
+
+    // Invalidate cache for this tenant and branch
+    await this.redis.invalidatePattern(`inventory:${context.tenantId}:*`);
 
     return result;
   }
