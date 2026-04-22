@@ -1,5 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
+import { Public } from '../../core/decorators/public.decorator';
 import { MetricsService, HealthStatus } from './metrics.service';
 
 @ApiTags('Metrics')
@@ -9,6 +10,7 @@ export class MetricsController {
 
   @ApiOperation({ summary: 'Get application health status' })
   @ApiResponse({ status: 200, description: 'Health status information' })
+  @Public()
   @Get('health')
   getHealthStatus(): HealthStatus {
     return this.metricsService.getHealthStatus();
