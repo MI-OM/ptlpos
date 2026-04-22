@@ -262,8 +262,9 @@ export class AuthController {
     status: 400,
     description: 'Invalid or expired verification token',
   })
-  verifyEmail(@Body() dto: VerifyEmailDto, @CurrentUser() user: AuthContext) {
-    return this.authService.verifyEmail(user.tenantId, dto.token);
+  verifyEmail(@Body() dto: VerifyEmailDto, @CurrentUser() user?: AuthContext) {
+    // For public endpoint, find tenant from verification token
+    return this.authService.verifyEmail(dto.token);
   }
 
   @Public()

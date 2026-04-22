@@ -420,7 +420,28 @@ export class AuthService {
   /**
    * Verify email with token
    */
-  async verifyEmail(tenantId: string, token: string) {
+  async verifyEmail(token: string, tenantId?: string) {
+    // Handle token-only request (for public endpoint)
+    if (!tenantId) {
+      const verificationToken = await this.prisma.verificationToken.findUnique({
+        where: { token },
+      });
+
+      if (!verificationToken) {
+        throw new BadRequestException('Invalid verification token');
+      }
+
+      return this.processEmailVerification(verificationToken.tenantId, token);
+    }
+
+    // Handle tenantId + token request (for authenticated endpoint)
+    return this.processEmailVerification(tenantId, token);
+  }
+
+  /**
+   * Helper method to process email verification
+   */
+  private async processEmailVerification(tenantId: string, token: string) {
     const verificationToken = await this.prisma.verificationToken.findUnique({
       where: { token },
     });
