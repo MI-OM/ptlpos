@@ -356,7 +356,7 @@ export class AuthService {
     if (!email) {
       email = emailOrTenantId;
       // Find tenant by user email
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.user.findFirst({
         where: { email },
         include: { tenant: true },
       });
