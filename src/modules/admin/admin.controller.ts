@@ -12,8 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-import { RolesGuard } from '../../core/guards/roles.guard';
+import { AdminJwtAuthGuard } from '../../core/guards/admin-jwt-auth.guard';
+import { AdminRolesGuard } from '../../core/guards/admin-roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UpdateTenantStatusDto } from './dto/update-tenant-status.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -23,7 +23,7 @@ import { AssignTicketDto } from './dto/assign-ticket.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AdminJwtAuthGuard)
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}

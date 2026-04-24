@@ -192,7 +192,6 @@ model User {
   supportTickets      SupportTicket[]     @relation("TicketCreator")
   assignedTickets     SupportTicket[]     @relation("TicketAssignee")
   supportMessages     SupportMessage[]
-  adminAuditLogs      AdminAuditLog[]
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -682,6 +681,30 @@ model UsageMetrics {
   @@index([tenantId, metric])
 }
 
+// Super Admin Users (separate from tenant users)
+model AdminUser {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        AdminRole @default(SUPER_ADMIN)
+  isActive    Boolean  @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  auditLogs   AdminAuditLog[]
+  
+  @@index([email])
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  SUPPORT_ADMIN
+  BILLING_ADMIN
+}
+
 // Admin Actions Audit
 model AdminAuditLog {
   id          String   @id @default(cuid())
@@ -694,7 +717,7 @@ model AdminAuditLog {
   userAgent   String?
   createdAt   DateTime @default(now())
   
-  admin       User     @relation(fields: [adminId], references: [id])
+  admin       AdminUser @relation(fields: [adminId], references: [id])
   
   @@index([adminId, action])
   @@index([targetType, targetId])

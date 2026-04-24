@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import axios from 'axios';
 
 export interface EmailOptions {
   to: string | string[];
@@ -10,72 +10,88 @@ export interface EmailOptions {
   replyTo?: string;
 }
 
-type Transporter = any;
-
 @Injectable()
 export class EmailService {
-  private transporter: Transporter | null;
   private readonly logger = new Logger(EmailService.name);
   private readonly fromEmail: string;
   private readonly appName: string;
+  private readonly mailgunDomain: string;
+  private readonly mailgunApiKey: string;
+  private readonly mailgunBaseUrl: string;
+  private readonly isConfigured: boolean;
 
   constructor(private configService: ConfigService) {
     this.fromEmail = this.configService.get<string>('MAILGUN_FROM_EMAIL') || '';
     this.appName = this.configService.get<string>('APP_NAME') || 'PTLPOS';
+    this.mailgunDomain = this.configService.get<string>('MAILGUN_DOMAIN') || '';
+    this.mailgunApiKey = this.configService.get<string>('MAILGUN_API_KEY') || '';
+    this.mailgunBaseUrl = (this.configService.get<string>('MAILGUN_BASE_URL') || 'https://api.mailgun.net/v3').replace(/\/$/, '');
 
-    const mailgunDomain = this.configService.get<string>('MAILGUN_DOMAIN');
-    const mailgunApiKey = this.configService.get<string>('MAILGUN_API_KEY');
+    this.isConfigured = !!(this.mailgunDomain && this.mailgunApiKey && this.fromEmail);
 
-    if (mailgunDomain && mailgunApiKey && this.fromEmail) {
-      this.transporter = nodemailer.createTransport({
-        host: `smtp.mailgun.org`,
-        port: 587,
-        secure: false,
-        auth: {
-          user: `postmaster@${mailgunDomain}`,
-          pass: mailgunApiKey,
-        },
-      });
-
-      this.logger.log('Email service initialized with Mailgun');
+    if (this.isConfigured) {
+      this.logger.log('Email service initialized with Mailgun API');
     } else {
       this.logger.warn(
         'Mailgun credentials not configured, email sending disabled',
       );
-      this.transporter = null;
     }
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
-    if (!this.transporter) {
+    if (!this.isConfigured) {
       this.logger.warn('Email service not configured, skipping email send');
       return false;
     }
 
     try {
-      const mailOptions = {
-        from: `${this.appName} <${this.fromEmail}>`,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-        ...(options.replyTo && { replyTo: options.replyTo }),
-      };
+      const endpoint = `${this.mailgunBaseUrl}/${this.mailgunDomain}/messages`;
+      
+      const form = new URLSearchParams();
+      form.append('from', `${this.appName} <${this.fromEmail}>`);
+      form.append('to', Array.isArray(options.to) ? options.to.join(',') : options.to);
+      form.append('subject', options.subject);
+      form.append('html', options.html);
+      if (options.text) {
+        form.append('text', options.text);
+      }
+      if (options.replyTo) {
+        form.append('h:Reply-To', options.replyTo);
+      }
+      form.append('o:tracking', 'yes');
+      form.append('o:tracking-clicks', 'no');
+      form.append('o:tracking-opens', 'no');
 
-      const result = await this.transporter.sendMail(mailOptions);
+      const response = await axios.post(endpoint, form.toString(), {
+        auth: {
+          username: 'api',
+          password: this.mailgunApiKey,
+        },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        timeout: 15000,
+      });
 
-      this.logger.log(
-        `Email sent successfully to ${Array.isArray(options.to) ? options.to.join(', ') : options.to}`,
-      );
-
-      return !!result.messageId;
+      const messageId = response.data?.id;
+      if (messageId) {
+        this.logger.log(
+          `Email sent successfully to ${Array.isArray(options.to) ? options.to.join(', ') : options.to} (ID: ${messageId})`,
+        );
+        return true;
+      } else {
+        this.logger.error('No message ID received from Mailgun');
+        return false;
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : '';
+      const errorDetails = error && typeof error === 'object' && 'response' in error 
+        ? JSON.stringify((error as any).response?.data || {})
+        : '';
       
       this.logger.error(
         `Failed to send email to ${options.to}: ${errorMessage}`,
-        errorStack,
+        errorDetails,
       );
       return false;
     }
@@ -296,6 +312,6 @@ export class EmailService {
   }
 
   isEmailConfigured(): boolean {
-    return !!this.transporter;
+    return this.isConfigured;
   }
 }

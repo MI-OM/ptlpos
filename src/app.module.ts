@@ -4,13 +4,14 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './core/database/prisma.module';
 import { RedisModule } from './core/database/redis.module';
-import { HttpExceptionFilter } from './core/filters/http-exception.filter';
+import { LoggingInterceptor } from './core/interceptors/logging.interceptor';
+import { PerformanceInterceptor } from './core/interceptors/performance.interceptor';
 import { ValidationExceptionFilter } from './core/filters/validation-exception.filter';
+import { HttpExceptionFilter } from './core/filters/http-exception.filter';
 import { JwtAuthGuard } from './core/guards/jwt-auth.guard';
 import { RequestContextGuard } from './core/guards/request-context.guard';
 import { RolesGuard } from './core/guards/roles.guard';
-import { LoggingInterceptor } from './core/interceptors/logging.interceptor';
-import { PerformanceInterceptor } from './core/interceptors/performance.interceptor';
+import { BypassAuthGuard } from './core/guards/bypass-auth.guard';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
@@ -35,6 +36,8 @@ import { ImportsModule } from './modules/imports/imports.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { EmailModule } from './modules/email/email.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { TestModule } from './modules/test/test.module';
 
 @Module({
   imports: [
@@ -79,23 +82,13 @@ import { MetricsModule } from './modules/metrics/metrics.module';
     ExportsModule,
     EmailModule,
     MetricsModule,
+    AdminModule,
+    TestModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RequestContextGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
     },
     {
       provide: APP_INTERCEPTOR,

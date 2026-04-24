@@ -30,9 +30,12 @@ Authorization: Bearer <your-jwt-token>
 ```
 
 ### User Roles
-- **ADMIN**: Full access to all features
+- **SUPER_ADMIN**: Full system administration, tenant management, subscription control
+- **ADMIN**: Full access to tenant features
 - **MANAGER**: Access to most features except user management
 - **SALES_REP**: Limited to sales operations
+- **SUPPORT_ADMIN**: Customer support operations and ticket management
+- **BILLING_ADMIN**: Subscription and billing management
 
 ### Security Features
 - **Tenant Isolation**: Strict multi-tenant data separation
@@ -843,6 +846,141 @@ GET /api/health
 
 ---
 
+### Super Admin (`/api/admin`) ⭐ NEW
+
+**Overview**: Comprehensive admin panel for tenant management, subscription control, and customer support. Requires Super Admin role access.
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|---------|-----------|-------------|---------------|
+| **TENANT MANAGEMENT** | | | | |
+| GET | `/admin/tenants` | List all tenants with pagination and filtering | Yes | SUPER_ADMIN |
+| GET | `/admin/tenants/:id` | Get tenant details including usage metrics | Yes | SUPER_ADMIN |
+| PUT | `/admin/tenants/:id/status` | Update tenant status (suspend/deactivate) | Yes | SUPER_ADMIN |
+| GET | `/admin/tenants/:id/usage` | Get tenant usage statistics and metrics | Yes | SUPER_ADMIN |
+| **SUBSCRIPTION MANAGEMENT** | | | | |
+| GET | `/admin/plans` | List all subscription plans | Yes | SUPER_ADMIN |
+| POST | `/admin/plans` | Create new subscription plan | Yes | SUPER_ADMIN |
+| GET | `/admin/plans/:id` | Get plan details | Yes | SUPER_ADMIN |
+| PUT | `/admin/plans/:id` | Update subscription plan | Yes | SUPER_ADMIN |
+| DELETE | `/admin/plans/:id` | Delete subscription plan | Yes | SUPER_ADMIN |
+| GET | `/admin/subscriptions` | List all tenant subscriptions | Yes | SUPER_ADMIN |
+| GET | `/admin/subscriptions/:id` | Get subscription details | Yes | SUPER_ADMIN |
+| PUT | `/admin/subscriptions/:id` | Change tenant subscription plan | Yes | SUPER_ADMIN |
+| **SUPPORT SYSTEM** | | | | |
+| GET | `/admin/tickets` | List all support tickets with filtering | Yes | SUPER_ADMIN, SUPPORT_ADMIN |
+| GET | `/admin/tickets/:id` | Get ticket details with messages | Yes | SUPER_ADMIN, SUPPORT_ADMIN |
+| POST | `/admin/tickets` | Create new support ticket | Yes | SUPER_ADMIN, SUPPORT_ADMIN |
+| PUT | `/admin/tickets/:id/assign` | Assign ticket to admin user | Yes | SUPER_ADMIN, SUPPORT_ADMIN |
+| PUT | `/admin/tickets/:id/status` | Update ticket status | Yes | SUPER_ADMIN, SUPPORT_ADMIN |
+| **ANALYTICS** | | | | |
+| GET | `/admin/analytics/overview` | Get system overview metrics | Yes | SUPER_ADMIN |
+| GET | `/admin/analytics/usage` | Get usage analytics by period | Yes | SUPER_ADMIN |
+| GET | `/admin/analytics/revenue` | Get revenue analytics by period | Yes | SUPER_ADMIN |
+
+#### Key Endpoints for Frontend
+
+**List Tenants with Filtering**
+```http
+GET /api/admin/tenants?page=1&limit=20&status=ACTIVE&search=acme
+Authorization: Bearer <admin-token>
+```
+
+**Update Tenant Status**
+```http
+PUT /api/admin/tenants/clh7x1q0a0000qa10f0f0f0f0/status
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "status": "SUSPENDED",
+  "reason": "Non-payment of subscription"
+}
+```
+
+**Create Subscription Plan**
+```http
+POST /api/admin/plans
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "name": "Pro Plan",
+  "description": "Advanced features for growing businesses",
+  "price": 99.99,
+  "billingCycle": "MONTHLY",
+  "limits": "{\"users\": 50, \"branches\": 10, \"products\": 5000}",
+  "features": "[\"inventory\", \"reports\", \"api_access\", \"multi_branch\"]",
+  "isActive": true
+}
+```
+
+**Create Support Ticket**
+```http
+POST /api/admin/tickets
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "tenantId": "clh7x1q0a0000qa10f0f0f0f0",
+  "userId": "clh7x1q0b0000qa20f0f0f0f0",
+  "subject": "Issue with inventory synchronization",
+  "description": "The inventory is not syncing across multiple branches. When we update stock in one branch, it does not reflect in others.",
+  "priority": "HIGH",
+  "category": "TECHNICAL"
+}
+```
+
+**Assign Support Ticket**
+```http
+PUT /api/admin/tickets/clh7x1q0b0000qa20f0f0f0f0/assign
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "assignedTo": "clh7x1q0b0000qa20f0f0f0f1"
+}
+```
+
+**Get System Overview**
+```http
+GET /api/admin/analytics/overview
+Authorization: Bearer <admin-token>
+```
+
+**Response Example:**
+```json
+{
+  "tenants": {
+    "total": 150,
+    "active": 142
+  },
+  "subscriptions": {
+    "total": 142,
+    "active": 138
+  },
+  "support": {
+    "openTickets": 23
+  },
+  "revenue": 28450.00
+}
+```
+
+**Super Admin Features:**
+- **Tenant Lifecycle Management**: Suspend, deactivate, reactivate tenant accounts
+- **Usage Monitoring**: Real-time tracking of users, branches, products per tenant
+- **Subscription Control**: Create and manage pricing plans with limits
+- **Customer Support**: Complete ticketing system with assignment and tracking
+- **Analytics Dashboard**: System-wide metrics and revenue analytics
+- **Audit Logging**: Complete audit trail of all admin actions
+
+**Security Features:**
+- **Role-Based Access**: SUPER_ADMIN, SUPPORT_ADMIN, BILLING_ADMIN roles
+- **Action Logging**: All admin actions logged with metadata
+- **Tenant Isolation**: Strict separation of tenant data
+- **Permission Validation**: Endpoint-level permission checks
+
+---
+
 ## Frontend Integration Guide
 
 ### Authentication Flow
@@ -852,6 +990,7 @@ GET /api/health
 3. **Store Tokens**: Save access_token and refresh_token securely
 4. **Use Access Token**: Include in Authorization header for all API calls
 5. **Refresh Token**: Use `/auth/refresh` when access token expires
+6. **Super Admin Access**: Use `/api/admin` endpoints with SUPER_ADMIN role for system management
 
 ### Error Handling
 

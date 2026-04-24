@@ -21,6 +21,11 @@ export class RequestContextGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<RequestWithContext>();
 
+    // Skip authentication for admin routes - let AdminJwtAuthGuard handle them
+    if (request.url && request.url.startsWith('/api/admin/')) {
+      return true;
+    }
+
     // Check for JWT-based auth from Authorization header
     const authHeader = request.header('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -30,8 +35,21 @@ export class RequestContextGuard implements CanActivate {
           this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
         const payload = jwt.verify(token, secret) as any;
 
-        const { sub, tenantId, role } = payload;
+        const { sub, tenantId, role, type } = payload;
         const branchId = payload.branchId || request.header('x-branch-id');
+        
+        // Handle admin tokens
+        if (type === 'admin') {
+          request.auth = {
+            tenantId: null,
+            userId: sub,
+            role: 'ADMIN',
+            branchId: null,
+          };
+          return true;
+        }
+        
+        // Handle tenant tokens
         if (sub && tenantId && role && Object.values(RoleName).includes(role as RoleName)) {
           request.auth = {
             tenantId,
