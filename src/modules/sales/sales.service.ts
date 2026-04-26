@@ -23,6 +23,7 @@ import {
   RefundSaleDto,
   QuerySalesDto,
 } from './dto/create-sale.dto';
+import { ReceiptSettingsDto } from './dto/receipt-settings.dto';
 
 type PrismaTx = Prisma.TransactionClient;
 
@@ -601,6 +602,22 @@ export class SalesService {
   async receipt(context: AuthContext, id: string) {
     const sale = await this.findOne(context.tenantId, id, context.branchId);
 
+    // Fetch tenant information for receipt customization
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: context.tenantId },
+      select: {
+        name: true,
+        phone: true,
+        email: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        country: true,
+        settings: true,
+      },
+    });
+
     await this.audit.log({
       tenantId: context.tenantId,
       userId: context.userId,
@@ -617,6 +634,16 @@ export class SalesService {
       status: sale.status,
       createdAt: sale.createdAt,
       customer: sale.customer,
+      tenant: tenant || {
+        name: 'PTLPOS',
+        phone: null,
+        email: null,
+        address: null,
+        city: null,
+        state: null,
+        zipCode: null,
+        country: null,
+      },
       items: sale.items.map(item => ({
         name: item.product.name,
         variant: item.productVariant?.name ?? null,
@@ -675,6 +702,27 @@ export class SalesService {
       )
       .join('');
 
+    // Build business info section
+    let businessInfo = '';
+    if (receipt.tenant.name) {
+      businessInfo += `<div><strong>${this.escapeHtml(receipt.tenant.name)}</strong></div>`;
+    }
+    if (receipt.tenant.phone) {
+      businessInfo += `<div class="muted">${this.escapeHtml(receipt.tenant.phone)}</div>`;
+    }
+    if (receipt.tenant.address) {
+      const addressParts = [
+        receipt.tenant.address,
+        receipt.tenant.city,
+        receipt.tenant.state,
+        receipt.tenant.zipCode,
+        receipt.tenant.country,
+      ].filter(Boolean);
+      if (addressParts.length > 0) {
+        businessInfo += `<div class="muted">${this.escapeHtml(addressParts.join(', '))}</div>`;
+      }
+    }
+
     return `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -731,7 +779,7 @@ export class SalesService {
   <body>
     <main class="receipt">
       <section class="center">
-        <div><strong>PTLPOS RECEIPT</strong></div>
+        ${businessInfo || '<div><strong>PTLPOS RECEIPT</strong></div>'}
         <div class="muted">Receipt ${this.escapeHtml(receipt.receiptNumber)}</div>
         <div class="muted">${this.escapeHtml(createdAt)}</div>
       </section>
@@ -783,8 +831,8 @@ export class SalesService {
       </table>
       <div class="divider"></div>
       <section class="center muted">
-        <div>Powered by PTLPOS</div>
-        <div>Generated for 80mm thermal printing</div>
+        <div>Thank you for your business!</div>
+        ${receipt.tenant.email ? `<div>${this.escapeHtml(receipt.tenant.email)}</div>` : ''}
       </section>
     </main>
   </body>
@@ -1097,6 +1145,64 @@ export class SalesService {
     return inventory;
   }
 
+  async getReceiptSettings(context: AuthContext) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: context.tenantId },
+      select: { settings: true },
+    });
+
+    const defaultSettings = {
+      showBusinessName: true,
+      showPhone: true,
+      showAddress: true,
+      showEmail: false,
+      showReceiptNumber: true,
+      showCustomerName: true,
+      showCustomerPhone: false,
+      customHeader: null,
+      customFooter: null,
+      showPoweredBy: false,
+    };
+
+    const receiptSettings = (tenant?.settings as any)?.receiptSettings || {};
+    return {
+      ...defaultSettings,
+      ...receiptSettings,
+    };
+  }
+
+  async updateReceiptSettings(context: AuthContext, dto: ReceiptSettingsDto) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: context.tenantId },
+      select: { settings: true },
+    });
+
+    const currentSettings = (tenant?.settings as any) || {};
+    const updatedSettings = {
+      ...currentSettings,
+      receiptSettings: {
+        ...(currentSettings.receiptSettings || {}),
+        ...dto,
+      },
+    };
+
+    await this.prisma.tenant.update({
+      where: { id: context.tenantId },
+      data: { settings: updatedSettings as Prisma.InputJsonValue },
+    });
+
+    await this.audit.log({
+      tenantId: context.tenantId,
+      userId: context.userId,
+      action: 'RECEIPT_SETTINGS_UPDATED',
+      entity: 'Tenant',
+      entityId: context.tenantId,
+      metadata: dto as unknown as Prisma.JsonObject,
+    });
+
+    return this.getReceiptSettings(context);
+  }
+
   private formatCurrency(value: Prisma.Decimal | number | string) {
     const amount =
       value instanceof Prisma.Decimal ? Number(value.toString()) : Number(value);
@@ -1105,10 +1211,13 @@ export class SalesService {
   }
 
   private formatReceiptValue(value: Prisma.Decimal | number | string) {
-    const amount =
-      value instanceof Prisma.Decimal ? Number(value.toString()) : Number(value);
-
-    return Number.isInteger(amount) ? String(amount) : amount.toFixed(3);
+    if (value instanceof Prisma.Decimal) {
+      return value.toFixed(2);
+    }
+    if (typeof value === 'number') {
+      return value.toFixed(2);
+    }
+    return value;
   }
 
   private escapeHtml(value: string) {

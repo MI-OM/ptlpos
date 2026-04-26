@@ -1,17 +1,13 @@
-import { Body, Controller, Delete, Get, Header, Param, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
-import { RoleName } from '@prisma/client';
-import {
-  AddSaleItemDto,
-  CompleteSaleDto,
-  CreateSaleDto,
-  RefundSaleDto,
-  QuerySalesDto,
-} from './dto/create-sale.dto';
+import { AddSaleItemDto, CreateSaleDto, SalePaymentDto, RefundSaleItemDto, CompleteSaleDto, RefundSaleDto, QuerySalesDto } from './dto/create-sale.dto';
 import { SalesService } from './sales.service';
+import { ReceiptSettingsDto } from './dto/receipt-settings.dto';
+import { RoleName } from '@prisma/client';
 
 @ApiTags('sales')
 @ApiBearerAuth()
@@ -81,6 +77,26 @@ export class SalesController {
   @Get()
   findAll(@CurrentUser() user: AuthContext, @Query() query: QuerySalesDto) {
     return this.salesService.findAll(user.tenantId, user.branchId, query);
+  }
+
+  @ApiOperation({ summary: 'Get receipt settings for tenant' })
+  @ApiResponse({
+    status: 200,
+    description: 'Receipt settings retrieved successfully',
+  })
+  @Get('settings/receipt')
+  getReceiptSettings(@CurrentUser() user: AuthContext) {
+    return this.salesService.getReceiptSettings(user);
+  }
+
+  @ApiOperation({ summary: 'Update receipt settings for tenant' })
+  @ApiResponse({
+    status: 200,
+    description: 'Receipt settings updated successfully',
+  })
+  @Patch('settings/receipt')
+  updateReceiptSettings(@CurrentUser() user: AuthContext, @Body() dto: ReceiptSettingsDto) {
+    return this.salesService.updateReceiptSettings(user, dto);
   }
 
   @ApiOperation({ summary: 'Get sale by ID' })

@@ -149,4 +149,82 @@ export class ProductionService {
 
     return result;
   }
+
+  async getOrders(context: AuthContext) {
+    // Return production orders based on production batches
+    const batches = await this.prisma.productionBatch.findMany({
+      where: {
+        product: {
+          tenantId: context.tenantId,
+        },
+      },
+      include: {
+        product: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return batches.map(batch => ({
+      id: batch.id,
+      product: batch.product.name,
+      quantity: batch.quantityProduced,
+      status: 'COMPLETED',
+      progress: 100,
+      startDate: batch.createdAt,
+      expectedDate: batch.createdAt,
+    }));
+  }
+
+  async getMaterials(context: AuthContext) {
+    // Return raw materials from inventory
+    const materials = await this.prisma.inventory.findMany({
+      where: {
+        tenantId: context.tenantId,
+        product: {
+          type: 'SIMPLE',
+        },
+      },
+      include: {
+        product: true,
+      },
+      take: 50,
+    });
+
+    return materials.map(material => ({
+      id: material.id,
+      name: material.product.name,
+      stock: material.quantity,
+      unit: 'pcs',
+      reorderLevel: 10,
+    }));
+  }
+
+  async getMachines(context: AuthContext) {
+    // Return mock machine data (would be stored in database in production)
+    return [
+      {
+        id: 'machine-1',
+        name: 'Packaging Machine A',
+        status: 'OPERATIONAL',
+        uptime: 98.5,
+        lastMaintenance: new Date('2026-04-15'),
+      },
+      {
+        id: 'machine-2',
+        name: 'Mixing Machine B',
+        status: 'OPERATIONAL',
+        uptime: 95.2,
+        lastMaintenance: new Date('2026-04-10'),
+      },
+      {
+        id: 'machine-3',
+        name: 'Labeling Machine C',
+        status: 'MAINTENANCE',
+        uptime: 92.1,
+        lastMaintenance: new Date('2026-04-20'),
+      },
+    ];
+  }
 }
