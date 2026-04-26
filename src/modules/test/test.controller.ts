@@ -25,7 +25,7 @@ export class TestController {
 
   private getSupabaseConfig(): SupabaseStorageConfigDto | null {
     const url = this.configService.get<string>('SUPABASE_URL');
-    const serviceKey = this.configService.get<string>('SUPABASE_SERVICE_KEY');
+    const serviceKey = this.configService.get<string>('SUPABASE_KEY');
     const bucket = this.configService.get<string>('SUPABASE_STORAGE_BUCKET') || 'product-images';
 
     if (url && serviceKey) {
@@ -262,7 +262,7 @@ export class TestController {
         service: storageConfigured ? 'Supabase Storage' : 'Not configured',
         environment: {
           supabaseUrl: process.env.SUPABASE_URL ? 'SET' : 'NOT_SET',
-          supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'NOT_SET',
+          supabaseServiceKey: process.env.SUPABASE_KEY ? 'SET' : 'NOT_SET',
           supabaseBucket: process.env.SUPABASE_STORAGE_BUCKET || 'product-images'
         }
       },

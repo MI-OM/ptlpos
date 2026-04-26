@@ -16,6 +16,38 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api');
 
+  // Enable CORS for frontend - Dynamic configuration based on environment
+  const corsOrigins = process.env.CORS_ORIGINS 
+    ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // Dynamic CORS configuration
+  const corsConfig = {
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    // Additional security for production
+    ...(isProduction && {
+      maxAge: 86400, // Cache preflight requests for 24 hours in production
+      optionsSuccessStatus: 204,
+    }),
+    // More permissive for development
+    ...(isDevelopment && {
+      maxAge: 300, // Cache preflight for 5 minutes in development
+      optionsSuccessStatus: 200,
+    }),
+  };
+
+  app.enableCors(corsConfig);
+
+  // Log CORS configuration for debugging
+  console.log(`CORS configured for origins: ${corsOrigins.join(', ')}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
   // Setup Swagger/OpenAPI documentation
   const config = new DocumentBuilder()
     .setTitle('PTLPOS API')
