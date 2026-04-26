@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, Header, Param, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Header, Param, Post, Query } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
@@ -9,6 +9,7 @@ import {
   CompleteSaleDto,
   CreateSaleDto,
   RefundSaleDto,
+  QuerySalesDto,
 } from './dto/create-sale.dto';
 import { SalesService } from './sales.service';
 
@@ -42,6 +43,44 @@ export class SalesController {
   @Post()
   create(@CurrentUser() user: AuthContext, @Body() dto: CreateSaleDto) {
     return this.salesService.create(user, dto);
+  }
+
+  @ApiOperation({ summary: 'List sales with pagination and filtering' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 15 })
+  @ApiQuery({ name: 'status', required: false, enum: ['OPEN', 'HELD', 'COMPLETED', 'CANCELLED', 'REFUNDED'], example: 'COMPLETED' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of sales with pagination metadata',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'sale-123',
+            status: 'COMPLETED',
+            totalAmount: 99.99,
+            subtotal: 89.99,
+            tax: 10.00,
+            discount: 0.00,
+            saleNumber: 'SAL-20240101-0001',
+            createdAt: '2024-01-01T00:00:00Z',
+            items: [],
+            customer: null,
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 15,
+          total: 100,
+          totalPages: 7,
+        },
+      },
+    },
+  })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
+  @Get()
+  findAll(@CurrentUser() user: AuthContext, @Query() query: QuerySalesDto) {
+    return this.salesService.findAll(user.tenantId, user.branchId, query);
   }
 
   @ApiOperation({ summary: 'Get sale by ID' })

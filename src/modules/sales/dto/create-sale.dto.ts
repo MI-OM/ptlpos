@@ -1,4 +1,4 @@
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, SaleStatus } from '@prisma/client';
 import {
   ArrayMinSize,
   IsArray,
@@ -9,6 +9,7 @@ import {
   IsString,
   Min,
   ValidateNested,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -224,4 +225,40 @@ export class RemoveSaleItemDto {
   })
   @IsString()
   saleItemId!: string;
+}
+
+export class QuerySalesDto {
+  @ApiPropertyOptional({
+    description: 'Page number for pagination',
+    example: 1,
+    default: 1,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'Number of items per page',
+    example: 15,
+    default: 15,
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  limit?: number = 15;
+
+  @ApiPropertyOptional({
+    description: 'Filter by sale status',
+    enum: SaleStatus,
+    example: SaleStatus.COMPLETED,
+  })
+  @IsOptional()
+  @IsEnum(SaleStatus)
+  status?: SaleStatus;
 }

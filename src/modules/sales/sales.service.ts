@@ -21,6 +21,7 @@ import {
   CompleteSaleDto,
   RefundSaleItemDto,
   RefundSaleDto,
+  QuerySalesDto,
 } from './dto/create-sale.dto';
 
 type PrismaTx = Prisma.TransactionClient;
@@ -149,6 +150,50 @@ export class SalesService {
     }
 
     return sale;
+  }
+
+  async findAll(tenantId: string, branchId?: string, query?: QuerySalesDto) {
+    const page = query?.page || 1;
+    const limit = query?.limit || 15;
+    const skip = (page - 1) * limit;
+    const status = query?.status;
+
+    const where: Prisma.SaleWhereInput = {
+      tenantId,
+      ...(branchId && { branchId }),
+      ...(status && { status }),
+    };
+
+    const [sales, total] = await Promise.all([
+      this.prisma.sale.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          customer: true,
+          payments: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.sale.count({ where }),
+    ]);
+
+    return {
+      data: sales,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async addItem(context: AuthContext, saleId: string, dto: AddSaleItemDto) {
