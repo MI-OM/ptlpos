@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseInterceptors } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { UploadedFile, UploadedFiles } from '@nestjs/common';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
@@ -33,6 +33,13 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @ApiOperation({ summary: 'List all products' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 15 })
+  @ApiQuery({ name: 'search', required: false, type: String, example: 'laptop' })
+  @ApiQuery({ name: 'categoryId', required: false, type: String, example: 'category-123' })
+  @ApiQuery({ name: 'type', required: false, enum: ['SIMPLE', 'VARIANT', 'COMPOSITE'], example: 'SIMPLE' })
+  @ApiQuery({ name: 'includeVariants', required: false, type: Boolean, example: false })
+  @ApiQuery({ name: 'includeInventory', required: false, type: Boolean, example: true })
   @ApiResponse({ status: 200, description: 'Products list' })
   @Get()
   findAll(@CurrentUser() user: AuthContext, @Query() query: QueryProductsDto) {

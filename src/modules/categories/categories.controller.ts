@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -26,6 +26,8 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @ApiOperation({ summary: 'List all categories' })
+  @ApiQuery({ name: 'search', required: false, type: String, example: 'bread' })
+  @ApiQuery({ name: 'includeInactive', required: false, type: Boolean, example: false })
   @ApiResponse({ status: 200, description: 'Categories list' })
   @Get()
   findAll(@CurrentUser() user: AuthContext, @Query() query: QueryCategoriesDto) {
@@ -33,7 +35,9 @@ export class CategoriesController {
   }
 
   @ApiOperation({ summary: 'Get category by ID' })
+  @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ status: 200, description: 'Category details' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   @Get(':id')
   findOne(@CurrentUser() user: AuthContext, @Param('id') id: string) {
     return this.categoriesService.findOne(user.tenantId, id);
@@ -41,6 +45,7 @@ export class CategoriesController {
 
   @ApiOperation({ summary: 'Create new category' })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Post()
   create(@CurrentUser() user: AuthContext, @Body() createCategoryDto: CreateCategoryDto) {
@@ -48,7 +53,10 @@ export class CategoriesController {
   }
 
   @ApiOperation({ summary: 'Update category' })
+  @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Patch(':id')
   update(
@@ -60,7 +68,9 @@ export class CategoriesController {
   }
 
   @ApiOperation({ summary: 'Delete category' })
+  @ApiParam({ name: 'id', description: 'Category ID' })
   @ApiResponse({ status: 200, description: 'Category deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   @Roles(RoleName.ADMIN)
   @Delete(':id')
   remove(@CurrentUser() user: AuthContext, @Param('id') id: string) {
