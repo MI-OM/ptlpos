@@ -25,6 +25,10 @@ export class QueryProductsDto {
   sku?: string;
 
   @IsOptional()
+  @IsString()
+  barcode?: string;
+
+  @IsOptional()
   @IsEnum(ProductType)
   type?: ProductType;
 

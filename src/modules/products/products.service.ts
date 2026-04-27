@@ -56,12 +56,14 @@ export class ProductsService {
     const limit = query.limit ?? 20;
     const normalizedQuery = query.q?.trim();
     const normalizedSku = query.sku?.trim();
+    const normalizedBarcode = query.barcode?.trim();
     const cacheKey = [
       `tenant:${tenantId}:products`,
       `page:${page}`,
       `limit:${limit}`,
       `q:${normalizedQuery ?? ''}`,
       `sku:${normalizedSku ?? ''}`,
+      `barcode:${normalizedBarcode ?? ''}`,
       `type:${query.type ?? ''}`,
       `categoryId:${query.categoryId ?? ''}`,
     ].join(':');
@@ -80,6 +82,11 @@ export class ProductsService {
         ? {
             contains: normalizedSku,
             mode: 'insensitive',
+          }
+        : undefined,
+      barcode: normalizedBarcode
+        ? {
+            equals: normalizedBarcode,
           }
         : undefined,
       OR: normalizedQuery
@@ -223,6 +230,7 @@ export class ProductsService {
           categoryId: dto.categoryId,
           name: dto.name,
           sku: dto.sku,
+          barcode: dto.barcode,
           imageUrl: dto.imageUrl,
           type: dto.type,
           price: dto.price,

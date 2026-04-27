@@ -133,6 +133,25 @@ export class CustomersService {
     return customer;
   }
 
+  async remove(tenantId: string, id: string) {
+    const customer = await this.findOne(tenantId, id);
+
+    await this.prisma.customer.delete({
+      where: { id },
+    });
+
+    await this.audit.log({
+      tenantId,
+      userId: null,
+      action: 'CUSTOMER_DELETED',
+      entity: 'Customer',
+      entityId: id,
+      metadata: { name: customer.name },
+    });
+
+    return { id };
+  }
+
   private async ensureNoDuplicateCustomer(
     tenantId: string,
     dto: { email?: string; phone?: string },

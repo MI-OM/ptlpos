@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -168,5 +168,18 @@ export class CustomersController {
     @Body() dto: UpdateCustomerDto
   ) {
     return this.customersService.update(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a customer' })
+  @ApiParam({ name: 'id', description: 'Customer ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Customer deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Delete(':id')
+  remove(@CurrentUser() user: AuthContext, @Param('id') id: string) {
+    return this.customersService.remove(user.tenantId, id);
   }
 }

@@ -85,6 +85,25 @@ export class SuppliersService {
     return supplier;
   }
 
+  async remove(tenantId: string, id: string) {
+    const supplier = await this.findOne(tenantId, id);
+
+    await this.prisma.supplier.delete({
+      where: { id },
+    });
+
+    await this.audit.log({
+      tenantId,
+      userId: null,
+      action: 'SUPPLIER_DELETED',
+      entity: 'Supplier',
+      entityId: id,
+      metadata: { name: supplier.name },
+    });
+
+    return { id };
+  }
+
   private async ensureNoDuplicateSupplier(
     tenantId: string,
     dto: { email?: string; phone?: string },

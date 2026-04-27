@@ -59,6 +59,14 @@ export class ReceiptSettingsDto {
   showCustomerPhone?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Show unit price on receipt line items',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  showUnitPrice?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Custom header text',
     example: 'Thank you for shopping with us!',
   })

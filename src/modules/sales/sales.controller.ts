@@ -7,6 +7,7 @@ import { AuthContext } from '../../core/types/request-context';
 import { AddSaleItemDto, CreateSaleDto, SalePaymentDto, RefundSaleItemDto, CompleteSaleDto, RefundSaleDto, QuerySalesDto } from './dto/create-sale.dto';
 import { SalesService } from './sales.service';
 import { ReceiptSettingsDto } from './dto/receipt-settings.dto';
+import { ReturnExchangeDto } from './dto/return-exchange.dto';
 import { RoleName } from '@prisma/client';
 
 @ApiTags('sales')
@@ -280,6 +281,19 @@ export class SalesController {
   @Post(':id/refund')
   refund(@CurrentUser() user: AuthContext, @Param('id') id: string, @Body() dto: RefundSaleDto) {
     return this.salesService.refund(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Return or exchange sale items' })
+  @ApiParam({ name: 'id', description: 'Sale ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return/exchange processed successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Sale not found' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
+  @Post(':id/return-exchange')
+  returnExchange(@CurrentUser() user: AuthContext, @Param('id') id: string, @Body() dto: ReturnExchangeDto) {
+    return this.salesService.returnExchange(user, id, dto);
   }
 
   @ApiOperation({ summary: 'Get sale receipt' })

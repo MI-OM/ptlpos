@@ -38,6 +38,7 @@ import { EmailModule } from './modules/email/email.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { TestModule } from './modules/test/test.module';
+import { ShiftsModule } from './modules/shifts/shifts.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { TestModule } from './modules/test/test.module';
     MetricsModule,
     AdminModule,
     TestModule,
+    ShiftsModule,
   ],
   providers: [
     {

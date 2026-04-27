@@ -58,11 +58,21 @@ export class SalesService {
     const sale = await this.prisma.$transaction(async tx => {
       const saleNumber = await this.generateSaleNumber(tx, context.tenantId);
 
+      // Get active shift for the user
+      const activeShift = await tx.shift.findFirst({
+        where: {
+          tenantId: context.tenantId,
+          userId: context.userId,
+          status: 'OPEN',
+        },
+      });
+
       const createdSale = await tx.sale.create({
         data: {
           tenantId: context.tenantId,
           branchId: context.branchId,
           customerId: dto.customerId,
+          shiftId: activeShift?.id,
           saleNumber,
           status: SaleStatus.OPEN,
           taxRateOverride: dto.taxRate,
@@ -429,6 +439,42 @@ export class SalesService {
 
       if (dto.payments?.length) {
         for (const payment of dto.payments) {
+          // Handle store credit payment
+          if (payment.method === 'STORE_CREDIT' && sale.customerId) {
+            const customer = await tx.customer.findUnique({
+              where: { id: sale.customerId },
+            });
+
+            if (!customer) {
+              throw new NotFoundException('Customer not found for credit payment');
+            }
+
+            if (new Prisma.Decimal(customer.creditBalance).lessThan(payment.amount)) {
+              throw new BadRequestException('Insufficient store credit balance');
+            }
+
+            // Deduct credit
+            const newBalance = new Prisma.Decimal(customer.creditBalance).sub(payment.amount);
+            await tx.customer.update({
+              where: { id: sale.customerId },
+              data: { creditBalance: newBalance },
+            });
+
+            // Create credit transaction
+            await tx.creditTransaction.create({
+              data: {
+                tenantId: context.tenantId,
+                customerId: sale.customerId,
+                amount: new Prisma.Decimal(payment.amount),
+                balanceAfter: newBalance,
+                type: 'DEBIT',
+                referenceType: 'sale',
+                referenceId: sale.id,
+                note: `Payment for sale ${sale.saleNumber}`,
+              },
+            });
+          }
+
           await tx.payment.create({
             data: {
               tenantId: context.tenantId,
@@ -457,7 +503,7 @@ export class SalesService {
         throw new BadRequestException('Payments cannot exceed the sale total');
       }
 
-      return tx.sale.update({
+      const updatedSale = await tx.sale.update({
         where: { id: sale.id },
         data: {
           status: SaleStatus.COMPLETED,
@@ -470,8 +516,12 @@ export class SalesService {
           customer: true,
         },
       });
+
+      console.log(`[DEBUG] Sale ${id} status updated to: ${updatedSale.status}`);
+      return updatedSale;
     });
 
+    console.log(`[DEBUG] Transaction committed. Final status: ${result.status}`);
     await this.audit.log({
       tenantId: context.tenantId,
       userId: context.userId,
@@ -480,6 +530,7 @@ export class SalesService {
       entityId: id,
       metadata: {
         paymentCount: dto.payments?.length ?? 0,
+        finalStatus: result.status,
       },
     });
 
@@ -599,6 +650,266 @@ export class SalesService {
     return result;
   }
 
+  async returnExchange(context: AuthContext, id: string, dto: any) {
+    const result = await this.prisma.$transaction(async tx => {
+      const sale = await tx.sale.findFirst({
+        where: {
+          id,
+          tenantId: context.tenantId,
+          branchId: context.branchId,
+        },
+        include: {
+          items: true,
+          payments: true,
+          customer: true,
+        },
+      });
+
+      if (!sale) {
+        throw new NotFoundException('Sale not found');
+      }
+
+      if (sale.status !== SaleStatus.COMPLETED) {
+        throw new BadRequestException('Only completed sales can be returned or exchanged');
+      }
+
+      // Process returns
+      const returnItems = await this.resolveRefundItems(tx, sale.items, dto.returnItems);
+      let returnTotal = new Prisma.Decimal(0);
+      let exchangeTotal = new Prisma.Decimal(0);
+
+      // Return items to inventory
+      for (const item of returnItems) {
+        returnTotal = returnTotal.add(item.refundLineTotal);
+
+        const inventory = await this.lockInventoryRow(
+          tx,
+          context.tenantId,
+          item.productId,
+          item.productVariantId
+        );
+
+        const nextQuantity = new Prisma.Decimal(inventory.quantity).add(item.refundQuantity);
+
+        await tx.inventory.update({
+          where: { id: inventory.id },
+          data: {
+            quantity: nextQuantity,
+          },
+        });
+
+        await tx.inventoryTransaction.create({
+          data: {
+            tenantId: context.tenantId,
+            productId: item.productId,
+            productVariantId: item.productVariantId,
+            type: InventoryTransactionType.REFUND,
+            quantity: item.refundQuantity,
+            balanceAfter: nextQuantity,
+            referenceType: 'sale_return_item',
+            referenceId: item.id,
+            note: dto.reason,
+          },
+        });
+      }
+
+      // Process exchanges if applicable
+      let exchangeSaleId: string | null = null;
+      if (dto.type !== 'RETURN' && dto.exchangeItems?.length) {
+        // Calculate exchange total
+        for (const exchangeItem of dto.exchangeItems) {
+          const product = await tx.product.findUnique({
+            where: { id: exchangeItem.productId },
+            include: {
+              variants: exchangeItem.productVariantId
+                ? {
+                    where: { id: exchangeItem.productVariantId },
+                  }
+                : undefined,
+            },
+          });
+
+          if (!product) {
+            throw new NotFoundException(`Product ${exchangeItem.productId} not found`);
+          }
+
+          const price = exchangeItem.productVariantId
+            ? product.variants?.[0]?.price || product.price
+            : product.price;
+
+          const itemTotal = new Prisma.Decimal(price).mul(exchangeItem.quantity);
+          exchangeTotal = exchangeTotal.add(itemTotal);
+        }
+
+        // Create a new sale for the exchange items
+        const saleNumber = await this.generateSaleNumber(tx, context.tenantId);
+
+        const exchangeSale = await tx.sale.create({
+          data: {
+            tenantId: context.tenantId,
+            branchId: context.branchId,
+            customerId: sale.customerId,
+            shiftId: null,
+            saleNumber,
+            status: SaleStatus.COMPLETED,
+            subtotalAmount: exchangeTotal,
+            discountAmount: new Prisma.Decimal(0),
+            taxAmount: new Prisma.Decimal(0),
+            totalAmount: exchangeTotal,
+            paidAmount: exchangeTotal,
+            note: `Exchange from sale ${sale.saleNumber}. ${dto.notes || ''}`,
+            completedAt: new Date(),
+          },
+        });
+
+        exchangeSaleId = exchangeSale.id;
+
+        // Add exchange items to the new sale
+        for (const exchangeItem of dto.exchangeItems) {
+          const product = await tx.product.findUnique({
+            where: { id: exchangeItem.productId },
+            include: {
+              variants: exchangeItem.productVariantId
+                ? {
+                    where: { id: exchangeItem.productVariantId },
+                  }
+                : undefined,
+            },
+          });
+
+          const price = exchangeItem.productVariantId
+            ? product?.variants?.[0]?.price || product.price
+            : product?.price;
+
+          const itemTotal = new Prisma.Decimal(price).mul(exchangeItem.quantity);
+
+          await tx.saleItem.create({
+            data: {
+              saleId: exchangeSale.id,
+              productId: exchangeItem.productId,
+              productVariantId: exchangeItem.productVariantId,
+              quantity: new Prisma.Decimal(exchangeItem.quantity),
+              price: new Prisma.Decimal(price),
+              taxRate: new Prisma.Decimal(0),
+              discountAmount: new Prisma.Decimal(0),
+              taxAmount: new Prisma.Decimal(0),
+              lineTotal: itemTotal,
+            },
+          });
+
+          // Deduct inventory for exchange items
+          const inventory = await this.lockInventoryRow(
+            tx,
+            context.tenantId,
+            exchangeItem.productId,
+            exchangeItem.productVariantId
+          );
+
+          const nextQuantity = new Prisma.Decimal(inventory.quantity).sub(exchangeItem.quantity);
+
+          await tx.inventory.update({
+            where: { id: inventory.id },
+            data: {
+              quantity: nextQuantity,
+            },
+          });
+
+          await tx.inventoryTransaction.create({
+            data: {
+              tenantId: context.tenantId,
+              productId: exchangeItem.productId,
+              productVariantId: exchangeItem.productVariantId,
+              type: InventoryTransactionType.SALE,
+              quantity: new Prisma.Decimal(exchangeItem.quantity).neg(),
+              balanceAfter: nextQuantity,
+              referenceType: 'sale_exchange_item',
+              referenceId: exchangeSale.id,
+              note: `Exchange from sale ${sale.saleNumber}`,
+            },
+          });
+        }
+
+        // Handle payment difference
+        const difference = exchangeTotal.sub(returnTotal);
+
+        if (difference.greaterThan(0)) {
+          // Customer pays additional amount
+          await tx.payment.create({
+            data: {
+              tenantId: context.tenantId,
+              saleId: exchangeSale.id,
+              method: 'CASH',
+              amount: difference,
+              direction: PaymentDirection.SALE,
+              status: 'COMPLETED',
+              reference: `exchange_payment:${sale.id}`,
+            },
+          });
+        } else if (difference.lessThan(0)) {
+          // Customer receives refund
+          await tx.payment.create({
+            data: {
+              tenantId: context.tenantId,
+              saleId: sale.id,
+              method: 'CASH',
+              amount: difference.abs(),
+              direction: PaymentDirection.REFUND,
+              status: 'COMPLETED',
+              reference: `exchange_refund:${exchangeSale.id}`,
+            },
+          });
+        }
+      } else {
+        // Just return - refund payment
+        const salePayments = sale.payments.filter(entry => entry.direction === PaymentDirection.SALE);
+        const refundRatio =
+          Number(sale.totalAmount) === 0 ? 0 : Number(returnTotal) / Number(sale.totalAmount);
+
+        for (const payment of salePayments) {
+          const refundAmount = new Prisma.Decimal(payment.amount).mul(refundRatio);
+
+          if (refundAmount.lessThanOrEqualTo(0)) {
+            continue;
+          }
+
+          await tx.payment.create({
+            data: {
+              tenantId: context.tenantId,
+              saleId: sale.id,
+              method: payment.method,
+              amount: refundAmount,
+              direction: PaymentDirection.REFUND,
+              reference: `return:${payment.id}`,
+              status: 'COMPLETED',
+            },
+          });
+        }
+      }
+
+      return {
+        originalSale: sale,
+        returnTotal,
+        exchangeTotal,
+        exchangeSaleId,
+        difference: exchangeTotal.sub(returnTotal),
+      };
+    });
+
+    await this.audit.log({
+      tenantId: context.tenantId,
+      userId: context.userId,
+      action: 'SALE_RETURN_EXCHANGE',
+      entity: 'Sale',
+      entityId: id,
+      metadata: {
+        type: dto.type,
+        reason: dto.reason,
+      },
+    });
+
+    return result;
+  }
+
   async receipt(context: AuthContext, id: string) {
     const sale = await this.findOne(context.tenantId, id, context.branchId);
 
@@ -649,6 +960,7 @@ export class SalesService {
         variant: item.productVariant?.name ?? null,
         quantity: item.quantity,
         price: item.price,
+        unitPrice: item.price,
         total: item.lineTotal,
       })),
       totals: {
@@ -1159,6 +1471,7 @@ export class SalesService {
       showReceiptNumber: true,
       showCustomerName: true,
       showCustomerPhone: false,
+      showUnitPrice: true,
       customHeader: null,
       customFooter: null,
       showPoweredBy: false,

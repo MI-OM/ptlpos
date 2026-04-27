@@ -30,6 +30,15 @@ class CreateProductVariantDto {
   @IsString()
   sku!: string;
 
+  @ApiProperty({
+    description: 'Variant barcode for scanning',
+    example: '1234567890123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
   @ApiPropertyOptional({
     description: 'Variant price (overrides base product price)',
     example: 29.99,
@@ -65,6 +74,15 @@ export class CreateProductDto {
   })
   @IsString()
   sku!: string;
+
+  @ApiProperty({
+    description: 'Product barcode for scanning',
+    example: '1234567890123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
 
   @ApiPropertyOptional({
     description: 'Product image URL',

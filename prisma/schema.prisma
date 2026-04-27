@@ -40,6 +40,7 @@ enum PaymentMethod {
   CASH
   TRANSFER
   CARD
+  STORE_CREDIT
 }
 
 enum PaymentDirection {
@@ -105,6 +106,8 @@ model Tenant {
   users                 User[]
   categories            Category[]
   products              Product[]
+  creditTransactions    CreditTransaction[]
+  shifts                Shift[]
   subscription          Subscription?      @relation("TenantSubscription")
   supportTickets        SupportTicket[]
   usageMetrics          UsageMetrics[]
@@ -142,6 +145,7 @@ model Branch {
   inventories Inventory[]
   inventoryTransactions InventoryTransaction[]
   sales       Sale[]
+  shifts      Shift[]
   purchaseOrders PurchaseOrder[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -187,6 +191,7 @@ model User {
   lastLoginAt         DateTime?
   tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   role                Role                @relation(fields: [roleId], references: [id])
+  shifts              Shift[]
   auditLogs           AuditLog[]
   passwordResetTokens PasswordResetToken[]
   supportTickets      SupportTicket[]     @relation("TicketCreator")
@@ -220,6 +225,7 @@ model Product {
   categoryId        String?
   name              String
   sku               String?
+  barcode           String?
   imageUrl          String?
   type              ProductType
   price             Decimal                @db.Decimal(14, 2)
@@ -244,6 +250,7 @@ model Product {
 
   @@index([tenantId, name])
   @@unique([tenantId, sku])
+  @@unique([tenantId, barcode])
 }
 
 model CompositeProductItem {
@@ -379,17 +386,43 @@ model StocktakeLineItem {
 }
 
 model Customer {
-  id         String    @id @default(cuid())
-  tenantId   String
-  name       String
-  phone      String?
-  email      String?
-  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sales      Sale[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  tenantId      String
+  name          String
+  phone         String?
+  email         String?
+  creditBalance Decimal   @default(0) @map("credit_balance") @db.Decimal(14, 2)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sales         Sale[]
+  creditTransactions CreditTransaction[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([tenantId, name])
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  tenantId    String
+  customerId  String
+  amount      Decimal  @db.Decimal(14, 2)
+  balanceAfter Decimal @map("balance_after") @db.Decimal(14, 2)
+  type        CreditTransactionType
+  referenceType String? @map("reference_type")
+  referenceId   String? @map("reference_id")
+  note        String?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, customerId, createdAt])
+}
+
+enum CreditTransactionType {
+  CREDIT
+  DEBIT
+  REFUND
+  ADJUSTMENT
 }
 
 model Sale {
@@ -397,6 +430,7 @@ model Sale {
   tenantId        String
   branchId        String?
   customerId      String?
+  shiftId         String?
   saleNumber      String      @map("sale_number")
   status          SaleStatus
   taxRateOverride Decimal?    @map("tax_rate_override") @db.Decimal(5, 2)
@@ -409,6 +443,7 @@ model Sale {
   tenant          Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch          Branch?     @relation(fields: [branchId], references: [id], onDelete: Cascade)
   customer        Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  shift           Shift?      @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   items           SaleItem[]
   payments        Payment[]
   invoice         Invoice?
@@ -421,6 +456,7 @@ model Sale {
 
   @@unique([tenantId, saleNumber])
   @@index([tenantId, branchId, status, createdAt])
+  @@index([tenantId, shiftId])
 }
 
 model Invoice {
@@ -558,6 +594,36 @@ model AuditLog {
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, entity, entityId, timestamp])
+}
+
+model Shift {
+  id              String    @id @default(cuid())
+  tenantId        String
+  branchId        String?
+  userId          String
+  openedAt        DateTime  @default(now())
+  closedAt        DateTime?
+  openingBalance  Decimal   @map("opening_balance") @db.Decimal(14, 2)
+  closingBalance  Decimal?  @map("closing_balance") @db.Decimal(14, 2)
+  cashSales       Decimal   @default(0) @map("cash_sales") @db.Decimal(14, 2)
+  cardSales       Decimal   @default(0) @map("card_sales") @db.Decimal(14, 2)
+  otherSales      Decimal   @default(0) @map("other_sales") @db.Decimal(14, 2)
+  status          ShiftStatus @default(OPEN)
+  notes           String?
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sales           Sale[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId, userId, status])
+  @@index([tenantId, branchId, status])
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
 }
 
 // Subscription Management

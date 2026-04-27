@@ -16,6 +16,7 @@ import {
   RequestPasswordResetDto,
   ResetPasswordDto,
 } from './dto/email-verification.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -293,5 +294,28 @@ export class AuthController {
   })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @ApiBearerAuth()
+  @Post('change-password')
+  @ApiOperation({
+    summary: 'Change password for authenticated user',
+    description: 'Change the password for the currently authenticated user by providing the current password.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+    schema: {
+      example: {
+        message: 'Password changed successfully',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Current password is incorrect',
+  })
+  changePassword(@CurrentUser() user: AuthContext, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user, dto.currentPassword, dto.newPassword);
   }
 }

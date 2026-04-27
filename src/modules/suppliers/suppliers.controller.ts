@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -52,5 +52,18 @@ export class SuppliersController {
     @Body() dto: UpdateSupplierDto
   ) {
     return this.suppliersService.update(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Delete a supplier' })
+  @ApiParam({ name: 'id', description: 'Supplier ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Supplier deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Supplier not found' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Delete(':id')
+  remove(@CurrentUser() user: AuthContext, @Param('id') id: string) {
+    return this.suppliersService.remove(user.tenantId, id);
   }
 }
