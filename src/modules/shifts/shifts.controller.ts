@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery }
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { OpenShiftDto, CloseShiftDto, QueryShiftsDto } from './dto/create-shift.dto';
+import { ReconcileShiftDto } from './dto/reconcile-shift.dto';
+import { EndOfDayReportQueryDto, EndOfShiftReportQueryDto, SalesPerformanceQueryDto } from './dto/report-query.dto';
 import { ShiftsService } from './shifts.service';
 
 @ApiTags('shifts')
@@ -73,5 +75,53 @@ export class ShiftsController {
   @Get('cash-drawer/summary')
   getCashDrawerSummary(@CurrentUser() user: AuthContext) {
     return this.shiftsService.getCashDrawerSummary(user);
+  }
+
+  @ApiOperation({ summary: 'Reconcile shift drawer' })
+  @ApiParam({ name: 'id', description: 'Shift ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Shift reconciled successfully',
+  })
+  @Post(':id/reconcile')
+  reconcileShift(@CurrentUser() user: AuthContext, @Param('id') id: string, @Body() dto: ReconcileShiftDto) {
+    return this.shiftsService.reconcileShift(user, id, dto);
+  }
+
+  @ApiOperation({ summary: 'Get end of day report' })
+  @ApiQuery({ name: 'date', required: false })
+  @ApiQuery({ name: 'branchId', required: false })
+  @ApiResponse({
+    status: 200,
+    description: 'End of day report',
+  })
+  @Get('reports/end-of-day')
+  getEndOfDayReport(@CurrentUser() user: AuthContext, @Query() query: EndOfDayReportQueryDto) {
+    return this.shiftsService.getEndOfDayReport(user, query.date, query.branchId);
+  }
+
+  @ApiOperation({ summary: 'Get end of shift report' })
+  @ApiQuery({ name: 'shiftId', required: true })
+  @ApiResponse({
+    status: 200,
+    description: 'End of shift report',
+  })
+  @Get('reports/end-of-shift')
+  getEndOfShiftReport(@CurrentUser() user: AuthContext, @Query() query: EndOfShiftReportQueryDto) {
+    return this.shiftsService.getEndOfShiftReport(user, query.shiftId);
+  }
+
+  @ApiOperation({ summary: 'Get sales performance report' })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'from', required: false })
+  @ApiQuery({ name: 'to', required: false })
+  @ApiQuery({ name: 'branchId', required: false })
+  @ApiResponse({
+    status: 200,
+    description: 'Sales performance report',
+  })
+  @Get('reports/sales-performance')
+  getSalesPerformance(@CurrentUser() user: AuthContext, @Query() query: SalesPerformanceQueryDto) {
+    return this.shiftsService.getSalesPerformance(user, query.userId, query.from, query.to, query.branchId);
   }
 }

@@ -4,6 +4,7 @@ import { AuthContext } from '../../core/types/request-context';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateTenantDetailsDto } from './dto/update-tenant-details.dto';
+import { UpdateTenantSettingsDto } from './dto/update-tenant-settings.dto';
 
 @Injectable()
 export class TenantsService {
@@ -89,6 +90,40 @@ export class TenantsService {
         state: dto.state,
         zipCode: dto.zipCode,
         country: dto.country,
+      },
+    });
+  }
+
+  async updateSettings(context: AuthContext, dto: UpdateTenantSettingsDto) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: context.tenantId },
+      select: { settings: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('Tenant not found');
+    }
+
+    const currentSettings = (tenant.settings as Record<string, any>) || {};
+    const updatedSettings = { ...currentSettings };
+
+    if (dto.taxRate !== undefined) {
+      updatedSettings.taxRate = dto.taxRate;
+    }
+    if (dto.taxEnabled !== undefined) {
+      updatedSettings.taxEnabled = dto.taxEnabled;
+    }
+    if (dto.taxId !== undefined) {
+      updatedSettings.taxId = dto.taxId;
+    }
+    if (dto.custom !== undefined) {
+      Object.assign(updatedSettings, dto.custom);
+    }
+
+    return this.prisma.tenant.update({
+      where: { id: context.tenantId },
+      data: {
+        settings: updatedSettings,
       },
     });
   }

@@ -1,5 +1,6 @@
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { DrawerType } from '@prisma/client';
 
 export class OpenShiftDto {
   @ApiProperty({
@@ -10,6 +11,15 @@ export class OpenShiftDto {
   @IsNumber()
   @Min(0)
   openingBalance!: number;
+
+  @ApiPropertyOptional({
+    description: 'Type of drawer being used',
+    enum: DrawerType,
+    example: DrawerType.OFFLINE,
+  })
+  @IsOptional()
+  @IsEnum(DrawerType)
+  drawerType?: DrawerType;
 
   @ApiPropertyOptional({
     description: 'Notes about opening the shift',

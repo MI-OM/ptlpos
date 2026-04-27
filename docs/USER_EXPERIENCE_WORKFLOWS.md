@@ -38,6 +38,12 @@ PATCH /sales/settings/receipt (customize receipts)
   - Show/hide unit price on receipt line items
   - Custom header/footer text
   - Customer name/phone display options
+
+PATCH /tenants/me/settings (update tax and invoicing settings)
+  - Tax rate (default percentage)
+  - Tax enabled/disabled
+  - Tax ID/VAT number
+  - Custom settings
 ```
 
 ### 1.3 Branch Management
@@ -250,6 +256,12 @@ POST /auth/login
 
 ### 2.2 Dashboard & Overview
 ```
+GET /dashboard/stats (dashboard statistics)
+  - Total customers, products, sales
+  - Total revenue (all time and today)
+  - Active shifts count
+  - Low stock alerts count
+
 GET /analytics/dashboard (branch performance)
   - Today's sales, revenue
   - Top selling products
@@ -346,7 +358,26 @@ GET /shifts (view all shifts)
 GET /shifts/active (view active shifts)
 GET /shifts/cash-drawer/summary (cash drawer summary)
 POST /shifts/open (open shift for staff)
+  - Opening balance, drawer type (ONLINE/OFFLINE/MIXED)
 POST /shifts/:id/close (close shift)
+  - Closing balance, notes
+POST /shifts/:id/reconcile (reconcile shift drawer)
+  - Actual cash count
+  - Payment method reconciliation
+  - Discrepancy tracking
+
+GET /shifts/reports/end-of-day (end of day report)
+  - Date filter, branch filter
+  - All shifts for the day
+  - Sales, payments, drawer reconciliation
+
+GET /shifts/reports/end-of-shift (end of shift report)
+  - Shift-specific details
+  - Sales, payments, reconciliation
+
+GET /shifts/reports/sales-performance (sales performance report)
+  - User filter, date range, branch filter
+  - Aggregated sales by user
 ```
 
 ### 2.12 Customer Management
@@ -522,9 +553,13 @@ GET /products (search products)
 |----------------|-------|---------|-----------|
 | Authentication | ✓ | ✓ | ✓ |
 | Tenant Settings | ✓ | ✗ | ✗ |
+| Tax Settings | ✓ | ✗ | ✗ |
+| Dashboard Stats | ✓ | ✓ | ✓ (limited) |
 | Branch Management | ✓ | ✓ (own) | ✗ |
 | User Management | ✓ | ✗ | ✗ |
 | Shift Management | ✓ | ✓ | ✓ (own) |
+| Shift Reconciliation | ✓ | ✓ | ✗ |
+| Shift Reports | ✓ | ✓ | ✓ (own) |
 | Product Management | ✓ | ✓ | ✓ (read only) |
 | Barcode Scanning | ✓ | ✓ | ✓ |
 | Category Management | ✓ | ✓ | ✓ (read only) |

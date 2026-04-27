@@ -56,6 +56,12 @@ enum PaymentStatus {
   REVERSED
 }
 
+enum DrawerType {
+  ONLINE
+  OFFLINE
+  MIXED
+}
+
 enum PurchaseOrderStatus {
   DRAFT
   APPROVED
@@ -597,25 +603,31 @@ model AuditLog {
 }
 
 model Shift {
-  id              String    @id @default(cuid())
-  tenantId        String
-  branchId        String?
-  userId          String
-  openedAt        DateTime  @default(now())
-  closedAt        DateTime?
-  openingBalance  Decimal   @map("opening_balance") @db.Decimal(14, 2)
-  closingBalance  Decimal?  @map("closing_balance") @db.Decimal(14, 2)
-  cashSales       Decimal   @default(0) @map("cash_sales") @db.Decimal(14, 2)
-  cardSales       Decimal   @default(0) @map("card_sales") @db.Decimal(14, 2)
-  otherSales      Decimal   @default(0) @map("other_sales") @db.Decimal(14, 2)
-  status          ShiftStatus @default(OPEN)
-  notes           String?
-  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch          Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sales           Sale[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                String         @id @default(cuid())
+  tenantId          String
+  branchId          String?
+  userId            String
+  openedAt          DateTime       @default(now())
+  closedAt          DateTime?
+  openingBalance    Decimal        @map("opening_balance") @db.Decimal(14, 2)
+  closingBalance    Decimal?       @map("closing_balance") @db.Decimal(14, 2)
+  cashSales         Decimal        @default(0) @map("cash_sales") @db.Decimal(14, 2)
+  cardSales         Decimal        @default(0) @map("card_sales") @db.Decimal(14, 2)
+  otherSales        Decimal        @default(0) @map("other_sales") @db.Decimal(14, 2)
+  status            ShiftStatus    @default(OPEN)
+  drawerType        DrawerType     @default(OFFLINE)
+  onlineDrawerBalance Decimal?      @map("online_drawer_balance") @db.Decimal(14, 2)
+  offlineDrawerBalance Decimal?     @map("offline_drawer_balance") @db.Decimal(14, 2)
+  actualCashCount    Decimal?       @map("actual_cash_count") @db.Decimal(14, 2)
+  discrepancy       Decimal?       @db.Decimal(14, 2)
+  notes             String?
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch            Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sales             Sale[]
+  reconciliations   ShiftReconciliation[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   @@index([tenantId, userId, status])
   @@index([tenantId, branchId, status])
@@ -624,6 +636,43 @@ model Shift {
 enum ShiftStatus {
   OPEN
   CLOSED
+}
+
+model ShiftReconciliation {
+  id          String   @id @default(cuid())
+  tenantId    String
+  shiftId     String
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  // Expected amounts
+  expectedCash      Decimal  @map("expected_cash") @db.Decimal(14, 2)
+  expectedCard      Decimal  @map("expected_card") @db.Decimal(14, 2)
+  expectedTransfer  Decimal  @map("expected_transfer") @db.Decimal(14, 2)
+  expectedMobile    Decimal  @map("expected_mobile") @db.Decimal(14, 2)
+  expectedTotal     Decimal  @map("expected_total") @db.Decimal(14, 2)
+
+  // Actual amounts counted
+  actualCash       Decimal  @map("actual_cash") @db.Decimal(14, 2)
+  actualCard       Decimal  @map("actual_card") @db.Decimal(14, 2)
+  actualTransfer   Decimal  @map("actual_transfer") @db.Decimal(14, 2)
+  actualMobile     Decimal  @map("actual_mobile") @db.Decimal(14, 2)
+  actualTotal      Decimal  @map("actual_total") @db.Decimal(14, 2)
+
+  // Discrepancies
+  cashDiscrepancy    Decimal  @map("cash_discrepancy") @db.Decimal(14, 2)
+  cardDiscrepancy    Decimal  @map("card_discrepancy") @db.Decimal(14, 2)
+  transferDiscrepancy Decimal  @map("transfer_discrepancy") @db.Decimal(14, 2)
+  mobileDiscrepancy  Decimal  @map("mobile_discrepancy") @db.Decimal(14, 2)
+  totalDiscrepancy   Decimal  @map("total_discrepancy") @db.Decimal(14, 2)
+
+  notes       String?
+  reconciledBy String  @map("reconciled_by")  // User who reconciled
+  reconciledAt DateTime @map("reconciled_at")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, shiftId])
+  @@index([tenantId, reconciledAt])
 }
 
 // Subscription Management

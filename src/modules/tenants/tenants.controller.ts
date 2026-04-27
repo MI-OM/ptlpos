@@ -6,6 +6,7 @@ import { AuthContext } from '../../core/types/request-context';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateTenantDetailsDto } from './dto/update-tenant-details.dto';
+import { UpdateTenantSettingsDto } from './dto/update-tenant-settings.dto';
 import { TenantsService } from './tenants.service';
 
 @Controller('tenants')
@@ -127,5 +128,19 @@ export class TenantsController {
   })
   updateDetails(@CurrentUser() user: AuthContext, @Body() dto: UpdateTenantDetailsDto) {
     return this.tenantsService.updateDetails(user, dto);
+  }
+
+  @Patch('me/settings')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update organization settings',
+    description: 'Update organization settings including tax rate and other configuration. Requires authentication.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization settings updated successfully',
+  })
+  updateSettings(@CurrentUser() user: AuthContext, @Body() dto: UpdateTenantSettingsDto) {
+    return this.tenantsService.updateSettings(user, dto);
   }
 }
