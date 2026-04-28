@@ -132,6 +132,9 @@ export class SalesService {
       action: 'SALE_CREATED',
       entity: 'Sale',
       entityId: sale.id,
+      metadata: {
+        entityName: `Sale #${sale.id}`,
+      },
     });
 
     return sale;
@@ -235,6 +238,7 @@ export class SalesService {
       entity: 'Sale',
       entityId: saleId,
       metadata: {
+        entityName: `Sale #${saleId}`,
         productId: dto.productId,
         productVariantId: dto.productVariantId ?? null,
         quantity: dto.quantity,
@@ -281,6 +285,7 @@ export class SalesService {
       entity: 'Sale',
       entityId: saleId,
       metadata: {
+        entityName: `Sale #${saleId}`,
         saleItemId,
       },
     });
@@ -529,6 +534,7 @@ export class SalesService {
       entity: 'Sale',
       entityId: id,
       metadata: {
+        entityName: `Sale #${id}`,
         paymentCount: dto.payments?.length ?? 0,
         finalStatus: result.status,
       },
@@ -643,6 +649,7 @@ export class SalesService {
       entity: 'Sale',
       entityId: id,
       metadata: {
+        entityName: `Sale #${id}`,
         reason: dto.reason,
       },
     });
@@ -902,6 +909,7 @@ export class SalesService {
       entity: 'Sale',
       entityId: id,
       metadata: {
+        entityName: `Sale #${id}`,
         type: dto.type,
         reason: dto.reason,
       },
@@ -935,6 +943,9 @@ export class SalesService {
       action: 'RECEIPT_REPRINTED',
       entity: 'Sale',
       entityId: id,
+      metadata: {
+        entityName: `Sale #${id}`,
+      },
     });
 
     return {
@@ -1392,6 +1403,9 @@ export class SalesService {
       action: auditAction,
       entity: 'Sale',
       entityId: id,
+      metadata: {
+        entityName: `Sale #${id}`,
+      },
     });
 
     return sale;
@@ -1510,7 +1524,10 @@ export class SalesService {
       action: 'RECEIPT_SETTINGS_UPDATED',
       entity: 'Tenant',
       entityId: context.tenantId,
-      metadata: dto as unknown as Prisma.JsonObject,
+      metadata: {
+        entityName: 'Tenant Settings',
+        ...dto,
+      } as unknown as Prisma.JsonObject,
     });
 
     return this.getReceiptSettings(context);

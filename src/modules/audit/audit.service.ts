@@ -82,8 +82,22 @@ export class AuditService {
       }),
     ]);
 
+    // Transform data to include user-readable information
+    const transformedData = data.map((log) => ({
+      id: log.id,
+      userId: log.userId,
+      userName: log.user?.name || 'Unknown User',
+      userEmail: log.user?.email || null,
+      action: log.action,
+      entity: log.entity,
+      entityId: log.entityId,
+      entityName: (log.metadata as any)?.entityName || (log.metadata as any)?.name || null,
+      timestamp: log.timestamp,
+      metadata: log.metadata,
+    }));
+
     return {
-      data,
+      data: transformedData,
       meta: {
         page,
         limit,
