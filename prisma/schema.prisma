@@ -157,6 +157,7 @@ model Branch {
   updatedAt   DateTime    @updatedAt
 
   @@index([tenantId, name])
+  @@index([tenantId, createdAt])
 }
 
 model VerificationToken {
@@ -223,6 +224,7 @@ model Category {
   updatedAt   DateTime  @updatedAt
 
   @@unique([tenantId, name])
+  @@index([tenantId, createdAt])
 }
 
 model Product {
@@ -255,6 +257,7 @@ model Product {
   updatedAt         DateTime               @updatedAt
 
   @@index([tenantId, name])
+  @@index([tenantId, createdAt])
   @@unique([tenantId, sku])
   @@unique([tenantId, barcode])
 }
@@ -405,6 +408,7 @@ model Customer {
   updatedAt     DateTime  @updatedAt
 
   @@index([tenantId, name])
+  @@index([tenantId, createdAt])
 }
 
 model CreditTransaction {
@@ -463,6 +467,7 @@ model Sale {
   @@unique([tenantId, saleNumber])
   @@index([tenantId, branchId, status, createdAt])
   @@index([tenantId, shiftId])
+  @@index([tenantId, status, completedAt])
 }
 
 model Invoice {
