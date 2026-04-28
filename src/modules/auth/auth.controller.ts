@@ -28,11 +28,11 @@ export class AuthController {
   @ApiOperation({
     summary: 'Register new organization and create admin user',
     description:
-      'Create a new tenant (organization) and the first admin user. No authentication required.',
+      'Create a new tenant (organization) and the first admin user. An email verification token is automatically sent to the organization email. No authentication required.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Organization and user successfully created',
+    description: 'Organization and user successfully created with email verification',
     schema: {
       example: {
         access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -47,6 +47,12 @@ export class AuthController {
           role: 'ADMIN',
           name: 'John Doe',
           email: 'john@acme.com',
+        },
+        emailVerification: {
+          message: 'Verification token sent. Check your email.',
+          email: 'contact@acme.com',
+          token: 'abc123def456...',
+          expiresAt: '2025-12-02T12:00:00Z',
         },
       },
     },

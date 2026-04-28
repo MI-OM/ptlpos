@@ -81,6 +81,9 @@ export class AuthService {
       expiresIn: '7d',
     });
 
+    // Generate and send email verification token
+    const verification = await this.generateVerificationToken(tenant.id, email);
+
     return {
       access_token,
       refresh_token,
@@ -94,6 +97,12 @@ export class AuthService {
         role: user.role.name,
         name: user.name,
         email: user.email,
+      },
+      emailVerification: {
+        message: verification.message,
+        email: verification.email,
+        token: verification.token,
+        expiresAt: verification.expiresAt,
       },
     };
   }
