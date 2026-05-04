@@ -22,6 +22,7 @@ describe('SalesService', () => {
     sale: { findFirst: jest.Mock; update: jest.Mock };
     customer: { findFirst: jest.Mock };
     product: { findMany: jest.Mock; findFirst: jest.Mock };
+    tenant: { findUnique: jest.Mock };
     inventoryTransaction?: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -42,6 +43,9 @@ describe('SalesService', () => {
       product: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
+      },
+      tenant: {
+        findUnique: jest.fn(),
       },
       inventoryTransaction: {
         findMany: jest.fn(),
@@ -85,7 +89,7 @@ describe('SalesService', () => {
       }),
     );
 
-    await expect(service.complete(context, 'sale-1', {})).rejects.toBeInstanceOf(
+    await expect(service.complete(context, 'sale-1', { payments: [] })).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
@@ -224,6 +228,18 @@ describe('SalesService', () => {
   });
 
   it('returns a receipt payload and logs the reprint event', async () => {
+    prisma.tenant.findUnique.mockResolvedValue({
+      name: 'PTLPOS',
+      phone: null,
+      email: null,
+      address: null,
+      city: null,
+      state: null,
+      zipCode: null,
+      country: null,
+      settings: null,
+    });
+
     jest.spyOn(service, 'findOne').mockResolvedValue({
       id: 'sale-1',
       saleNumber: 'SAL-20260417-0001',
@@ -285,6 +301,16 @@ describe('SalesService', () => {
       status: SaleStatus.COMPLETED,
       createdAt: new Date('2026-04-16T12:00:00Z'),
       customer: { id: 'customer-1', name: 'Ada & Co' },
+      tenant: {
+        name: 'PTLPOS',
+        phone: null,
+        email: null,
+        address: null,
+        city: null,
+        state: null,
+        zipCode: null,
+        country: null,
+      },
       items: [
         {
           name: 'Bread <Loaf>',
@@ -313,11 +339,11 @@ describe('SalesService', () => {
     const html = await service.printableReceipt(context, 'sale-1');
 
     expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('PTLPOS RECEIPT');
+    expect(html).toContain('<strong>PTLPOS</strong>');
     expect(html).toContain('SAL-20260417-0001');
     expect(html).toContain('Ada &amp; Co');
     expect(html).toContain('Bread &lt;Loaf&gt;');
-    expect(html).toContain('Generated for 80mm thermal printing');
+    expect(html).toContain('Thank you for your business!');
   });
 
   it('renders a receipt print job that triggers browser printing', async () => {

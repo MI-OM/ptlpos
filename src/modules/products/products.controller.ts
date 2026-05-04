@@ -128,6 +128,32 @@ export class ProductsController {
     return this.productsService.getCompositeWithInventory(user.tenantId, id);
   }
 
+  @ApiOperation({ summary: 'Get comprehensive product history (sales, stock updates, purchases, transfers)' })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'type', required: false, enum: ['SALE', 'PURCHASE', 'TRANSFER', 'ADJUSTMENT', 'OPENING', 'STOCKTAKE'], description: 'Filter by transaction type' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product history retrieved successfully',
+  })
+  @Get(':id/history')
+  getProductHistory(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: string
+  ) {
+    return this.productsService.getProductHistory(
+      user.tenantId,
+      id,
+      Number(page ?? 1),
+      Number(limit ?? 20),
+      type
+    );
+  }
+
   @ApiOperation({ summary: 'Upload product image' })
   @ApiParam({ name: 'id', description: 'Product ID' })
   @ApiResponse({

@@ -103,9 +103,20 @@ export class CustomersController {
     @CurrentUser() user: AuthContext,
     @Param('id') id: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('minAmount') minAmount?: string
   ) {
-    return this.customersService.history(user.tenantId, id, Number(page ?? 1), Number(limit ?? 20));
+    return this.customersService.history(
+      user.tenantId,
+      id,
+      Number(page ?? 1),
+      Number(limit ?? 20),
+      from,
+      to,
+      minAmount ? Number(minAmount) : undefined
+    );
   }
 
   @ApiOperation({ summary: 'Create a new customer' })

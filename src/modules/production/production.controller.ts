@@ -25,6 +25,13 @@ export class ProductionController {
     return this.productionService.getOrders(user);
   }
 
+  @Get('recipes')
+  @ApiOperation({ summary: 'Get all production recipes with cost and margin calculations' })
+  @ApiResponse({ status: 200, description: 'Production recipes retrieved successfully' })
+  getRecipes(@CurrentUser() user: AuthContext) {
+    return this.productionService.getRecipes(user);
+  }
+
   @Get('materials')
   @ApiOperation({ summary: 'Get production materials' })
   @ApiResponse({ status: 200, description: 'Production materials retrieved successfully' })

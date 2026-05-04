@@ -1,381 +1,101 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
-import { ImportsService } from '../../src/modules/imports/imports.service';
-import { ImportProductsDto } from '../../src/modules/imports/dto/import-products.dto';
-import { ImportCustomersDto } from '../../src/modules/imports/dto/import-customers.dto';
-import { ImportSuppliersDto } from '../../src/modules/imports/dto/import-suppliers.dto';
 import { RoleName } from '@prisma/client';
+import { ImportsService } from '../../src/modules/imports/imports.service';
 
 describe('ImportsService', () => {
   let service: ImportsService;
-  let prisma: PrismaService;
+  let prisma: any;
 
-  const mockTenantId = 'test-tenant-id';
-  const mockUserId = 'test-user-id';
+  const context = {
+    tenantId: 'test-tenant-id',
+    userId: 'test-user-id',
+    role: RoleName.ADMIN,
+  };
 
-  const mockProducts = [
-    {
-      name: 'Test Product 1',
-      sku: 'TEST-001',
-      type: 'SIMPLE',
-      price: 99.99,
-      cost: 75.00,
-      taxRate: 8.25,
-    },
-    {
-      name: 'Test Product 2',
-      sku: 'TEST-002',
-      type: 'VARIANT',
-      price: 149.99,
-      cost: 120.00,
-      taxRate: 8.25,
-    },
-  ];
+  beforeEach(() => {
+    prisma = {
+      product: {
+        upsert: jest.fn(),
+      },
+      customer: {
+        findFirst: jest.fn(),
+        create: jest.fn(),
+      },
+      supplier: {
+        findFirst: jest.fn(),
+        create: jest.fn(),
+      },
+    } as any;
 
-  const mockCustomers = [
-    {
-      name: 'Test Customer 1',
-      phone: '+1-800-TEST-1',
-      email: 'customer1@test.com',
-    },
-    {
-      name: 'Test Customer 2',
-      phone: '+1-800-TEST-2',
-      email: 'customer2@test.com',
-    },
-  ];
+    service = new ImportsService(prisma as never);
+  });
 
-  const mockSuppliers = [
-    {
-      name: 'Test Supplier 1',
-      email: 'supplier1@test.com',
-      phone: '+1-800-SUPPLIER-1',
-    },
-    {
-      name: 'Test Supplier 2',
-      email: 'supplier2@test.com',
-      phone: '+1-800-SUPPLIER-2',
-    },
-  ];
+  it('imports products using upsert', async () => {
+    prisma.product.upsert.mockResolvedValue({ id: 'product-1' } as any);
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ImportsService,
+    const result = await service.importProducts(context, {
+      products: [
         {
-          provide: PrismaService,
-          useValue: {
-            product: {
-              findMany: jest.fn(),
-              findFirst: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
-            },
-            customer: {
-              findMany: jest.fn(),
-              findFirst: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
-            },
-            supplier: {
-              findMany: jest.fn(),
-              findFirst: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
-            },
-            $transaction: jest.fn().mockImplementation((callback: any) => {
-              const tx = {
-                product: {
-                  findMany: jest.fn(),
-                  findFirst: jest.fn(),
-                  create: jest.fn(),
-                  update: jest.fn(),
-                },
-                customer: {
-                  findMany: jest.fn(),
-                  findFirst: jest.fn(),
-                  create: jest.fn(),
-                  update: jest.fn(),
-                },
-                supplier: {
-                  findMany: jest.fn(),
-                  findFirst: jest.fn(),
-                  create: jest.fn(),
-                  update: jest.fn(),
-                },
-              };
-              return callback(tx);
-            }),
-          } as any,
+          name: 'Test Product 1',
+          sku: 'TEST-001',
+          price: 99.99,
+          cost: 75,
+          taxRate: 8.25,
+        },
+        {
+          name: 'Test Product 2',
+          sku: 'TEST-002',
+          price: 149.99,
         },
       ],
-    }).compile();
-
-    service = module.get<ImportsService>(ImportsService);
-    prisma = module.get<PrismaService>(PrismaService);
-  });
-
-  describe('importProducts', () => {
-    it('should import products successfully', async () => {
-      const importDto: ImportProductsDto = {
-        products: mockProducts,
-      };
-
-      const expectedResult = {
-        success: 2,
-        failed: 0,
-        errors: [],
-        details: {
-          created: 2,
-          updated: 0,
-          skipped: 0,
-        },
-      };
-
-      prisma.product.findMany.mockResolvedValue([]);
-      prisma.$transaction.mockImplementation((callback) => {
-        const tx = {
-          product: {
-            create: jest.fn().mockResolvedValue({ id: 'product-1' }),
-          },
-        };
-        return callback(tx);
-      });
-
-      const result = await service.importProducts(
-        { tenantId: mockTenantId, userId: mockUserId, role: RoleName.ADMIN },
-        importDto
-      );
-
-      expect(result).toEqual(expectedResult);
-      expect(prisma.product.findMany).toHaveBeenCalledWith({
-        where: {
-          tenantId: mockTenantId,
-          sku: { in: ['TEST-001', 'TEST-002'] },
-        },
-      });
     });
 
-    it('should handle duplicates by updating existing products', async () => {
-      const importDto: ImportProductsDto = {
-        products: mockProducts,
-      };
-
-      const existingProduct = {
-        id: 'existing-product-id',
-        sku: 'TEST-001',
-        name: 'Existing Product',
-      };
-
-      prisma.product.findMany.mockResolvedValue([existingProduct]);
-
-      const expectedResult = {
-        success: 2,
-        failed: 0,
-        errors: [],
-        details: {
-          created: 1,
-          updated: 1,
-          skipped: 0,
-        },
-      };
-
-      prisma.$transaction.mockImplementation((callback) => {
-        const tx = {
-          product: {
-            create: jest.fn().mockResolvedValue({ id: 'new-product-id' }),
-            update: jest.fn().mockResolvedValue({ id: 'existing-product-id' }),
-          },
-        };
-        return callback(tx);
-      });
-
-      const result = await service.importProducts(
-        { tenantId: mockTenantId, userId: mockUserId, role: RoleName.ADMIN },
-        importDto
-      );
-
-      expect(result).toEqual(expectedResult);
-      expect(prisma.product.findMany).toHaveBeenCalledWith({
-        where: {
-          tenantId: mockTenantId,
-          sku: { in: ['TEST-001', 'TEST-002'] },
-        },
-      });
+    expect(prisma.product.upsert).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({
+      success: true,
+      message: 'Import completed: 2 imported, 0 failed',
+      importedCount: 2,
+      failedCount: 0,
+      errors: undefined,
     });
   });
 
-  describe('importCustomers', () => {
-    it('should import customers successfully', async () => {
-      const importDto: ImportCustomersDto = {
-        customers: mockCustomers,
-      };
+  it('imports customers and skips duplicates', async () => {
+    prisma.customer.findFirst
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce({ id: 'existing-customer' } as any);
+    prisma.customer.create.mockResolvedValue({ id: 'customer-1' } as any);
 
-      const expectedResult = {
-        success: 2,
-        failed: 0,
-        errors: [],
-        details: {
-          created: 2,
-          updated: 0,
-          skipped: 0,
-        },
-      };
-
-      prisma.customer.findMany.mockResolvedValue([]);
-      prisma.$transaction.mockImplementation((callback) => {
-        const tx = {
-          customer: {
-            create: jest.fn().mockResolvedValue({ id: 'customer-1' }),
-          },
-        };
-        return callback(tx);
-      });
-
-      const result = await service.importCustomers(
-        { tenantId: mockTenantId, userId: mockUserId, role: RoleName.ADMIN },
-        importDto
-      );
-
-      expect(result).toEqual(expectedResult);
-      expect(prisma.customer.findMany).toHaveBeenCalledWith({
-        where: {
-          tenantId: mockTenantId,
-          OR: [
-            { email: { in: ['customer1@test.com', 'customer2@test.com'] } },
-            { phone: { in: ['+1-800-TEST-1', '+1-800-TEST-2'] } },
-          ],
-        },
-      });
+    const result = await service.importCustomers(context, {
+      customers: [
+        { name: 'Customer One', email: 'customer1@test.com', phone: '+1-800-TEST-1' },
+        { name: 'Customer Two', email: 'customer1@test.com' },
+      ],
     });
 
-    it('should handle duplicates by updating existing customers', async () => {
-      const importDto: ImportCustomersDto = {
-        customers: mockCustomers,
-      };
-
-      const existingCustomer = {
-        id: 'existing-customer-id',
-        email: 'customer1@test.com',
-        name: 'Existing Customer',
-      };
-
-      prisma.customer.findMany.mockResolvedValue([existingCustomer]);
-
-      const expectedResult = {
-        success: 2,
-        failed: 0,
-        errors: [],
-        details: {
-          created: 1,
-          updated: 1,
-          skipped: 0,
-        },
-      };
-
-      prisma.$transaction.mockImplementation((callback) => {
-        const tx = {
-          customer: {
-            create: jest.fn().mockResolvedValue({ id: 'new-customer-id' }),
-            update: jest.fn().mockResolvedValue({ id: 'existing-customer-id' }),
-          },
-        };
-        return callback(tx);
-      });
-
-      const result = await service.importCustomers(
-        { tenantId: mockTenantId, userId: mockUserId, role: RoleName.ADMIN },
-        importDto
-      );
-
-      expect(result).toEqual(expectedResult);
-    });
+    expect(prisma.customer.create).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(false);
+    expect(result.importedCount).toBe(1);
+    expect(result.failedCount).toBe(1);
   });
 
-  describe('importSuppliers', () => {
-    it('should import suppliers successfully', async () => {
-      const importDto: ImportSuppliersDto = {
-        suppliers: mockSuppliers,
-      };
+  it('imports suppliers and skips duplicates', async () => {
+    prisma.supplier.findFirst
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce({ id: 'existing-supplier' } as any);
+    prisma.supplier.create.mockResolvedValue({ id: 'supplier-1' } as any);
 
-      const expectedResult = {
-        success: 2,
-        failed: 0,
-        errors: [],
-        details: {
-          created: 2,
-          updated: 0,
-          skipped: 0,
-        },
-      };
-
-      prisma.supplier.findMany.mockResolvedValue([]);
-      prisma.$transaction.mockImplementation((callback) => {
-        const tx = {
-          supplier: {
-            create: jest.fn().mockResolvedValue({ id: 'supplier-1' }),
-          },
-        };
-        return callback(tx);
-      });
-
-      const result = await service.importSuppliers(
-        { tenantId: mockTenantId, userId: mockUserId, role: RoleName.ADMIN },
-        importDto
-      );
-
-      expect(result).toEqual(expectedResult);
-      expect(prisma.supplier.findMany).toHaveBeenCalledWith({
-        where: {
-          tenantId: mockTenantId,
-          OR: [
-            { email: { in: ['supplier1@test.com', 'supplier2@test.com'] } },
-            { phone: { in: ['+1-800-SUPPLIER-1', '+1-800-SUPPLIER-2'] } },
-          ],
-        },
-      });
+    const result = await service.importSuppliers(context, {
+      suppliers: [
+        { name: 'Supplier One', email: 'supplier1@test.com', phone: '+1-800-SUPPLIER-1' },
+        { name: 'Supplier Two', email: 'supplier1@test.com' },
+      ],
     });
 
-    it('should handle duplicates by updating existing suppliers', async () => {
-      const importDto: ImportSuppliersDto = {
-        suppliers: mockSuppliers,
-      };
-
-      const existingSupplier = {
-        id: 'existing-supplier-id',
-        email: 'supplier1@test.com',
-        name: 'Existing Supplier',
-      };
-
-      prisma.supplier.findMany.mockResolvedValue([existingSupplier]);
-
-      const expectedResult = {
-        success: 2,
-        failed: 0,
-        errors: [],
-        details: {
-          created: 1,
-          updated: 1,
-          skipped: 0,
-        },
-      };
-
-      prisma.$transaction.mockImplementation((callback) => {
-        const tx = {
-          supplier: {
-            create: jest.fn().mockResolvedValue({ id: 'new-supplier-id' }),
-            update: jest.fn().mockResolvedValue({ id: 'existing-supplier-id' }),
-          },
-        };
-        return callback(tx);
-      });
-
-      const result = await service.importSuppliers(
-        { tenantId: mockTenantId, userId: mockUserId, role: RoleName.ADMIN },
-        importDto
-      );
-
-      expect(result).toEqual(expectedResult);
-    });
+    expect(prisma.supplier.create).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(false);
+    expect(result.importedCount).toBe(1);
+    expect(result.failedCount).toBe(1);
   });
 });

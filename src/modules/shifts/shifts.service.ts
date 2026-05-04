@@ -311,6 +311,10 @@ export class ShiftsService {
   async getCashDrawerSummary(context: AuthContext) {
     const shift = await this.getActiveShift(context);
 
+    if (!shift) {
+      throw new NotFoundException('No active shift found for the current user');
+    }
+
     return {
       shiftId: shift.id,
       openedAt: shift.openedAt,

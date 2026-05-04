@@ -54,7 +54,21 @@ describe('AuditService', () => {
 
   it('returns paginated tenant-scoped audit logs', async () => {
     prisma.$transaction.mockResolvedValue([
-      [{ id: 'log-1', entity: 'Sale' }],
+      [
+        {
+          id: 'log-1',
+          userId: 'user-1',
+          action: 'SALE_CREATED',
+          entity: 'Sale',
+          entityId: 'sale-1',
+          timestamp: new Date('2026-04-10T12:00:00.000Z'),
+          metadata: { entityName: 'Sale #1' },
+          user: {
+            name: 'Admin User',
+            email: 'admin@example.com',
+          },
+        },
+      ],
       1,
     ]);
 
@@ -69,7 +83,20 @@ describe('AuditService', () => {
 
     expect(prisma.$transaction).toHaveBeenCalled();
     expect(result).toEqual({
-      data: [{ id: 'log-1', entity: 'Sale' }],
+      data: [
+        {
+          id: 'log-1',
+          userId: 'user-1',
+          userName: 'Admin User',
+          userEmail: 'admin@example.com',
+          action: 'SALE_CREATED',
+          entity: 'Sale',
+          entityId: 'sale-1',
+          entityName: 'Sale #1',
+          timestamp: new Date('2026-04-10T12:00:00.000Z'),
+          metadata: { entityName: 'Sale #1' },
+        },
+      ],
       meta: {
         page: 2,
         limit: 5,

@@ -44,16 +44,43 @@ export class CustomersService {
     return customer;
   }
 
-  async history(tenantId: string, id: string, page = 1, limit = 20) {
+  async history(
+    tenantId: string,
+    id: string,
+    page = 1,
+    limit = 20,
+    from?: string,
+    to?: string,
+    minAmount?: number
+  ) {
     await this.findOne(tenantId, id);
 
     const skip = (page - 1) * limit;
+    
+    const where: Prisma.SaleWhereInput = {
+      tenantId,
+      customerId: id,
+    };
+
+    if (from || to) {
+      where.createdAt = {};
+      if (from) {
+        where.createdAt.gte = new Date(from);
+      }
+      if (to) {
+        where.createdAt.lte = new Date(to);
+      }
+    }
+
+    if (minAmount !== undefined) {
+      where.totalAmount = {
+        gte: minAmount,
+      };
+    }
+
     const [sales, total] = await this.prisma.$transaction([
       this.prisma.sale.findMany({
-        where: {
-          tenantId,
-          customerId: id,
-        },
+        where,
         include: {
           items: {
             include: {
@@ -70,10 +97,7 @@ export class CustomersService {
         take: limit,
       }),
       this.prisma.sale.count({
-        where: {
-          tenantId,
-          customerId: id,
-        },
+        where,
       }),
     ]);
 

@@ -3,7 +3,6 @@ import { ProductsService } from 'src/modules/products/products.service';
 
 describe('ProductsService', () => {
   let prisma: {
-    $transaction: jest.Mock;
     product: {
       findMany: jest.Mock;
       count: jest.Mock;
@@ -21,7 +20,6 @@ describe('ProductsService', () => {
 
   beforeEach(() => {
     prisma = {
-      $transaction: jest.fn(),
       product: {
         findMany: jest.fn(),
         count: jest.fn(),
@@ -59,36 +57,13 @@ describe('ProductsService', () => {
       data: [{ id: 'product-1' }],
       meta: { page: 1, limit: 20, total: 1 },
     });
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.product.findMany).not.toHaveBeenCalled();
   });
 
   it('queries products with pagination and filters and caches the response', async () => {
     redis.get.mockResolvedValue(null);
-    prisma.product.findMany.mockReturnValue({
-      args: {
-        where: {
-          tenantId: 'tenant-1',
-          type: ProductType.SIMPLE,
-          sku: {
-            contains: 'BRD',
-            mode: 'insensitive',
-          },
-        },
-        skip: 10,
-        take: 10,
-      },
-    });
-    prisma.product.count.mockReturnValue({
-      args: {
-        where: {
-          tenantId: 'tenant-1',
-        },
-      },
-    });
-    prisma.$transaction.mockResolvedValue([
-      [{ id: 'product-1', name: 'Bread', variants: [] }],
-      1,
-    ]);
+    prisma.product.findMany.mockResolvedValue([{ id: 'product-1', name: 'Bread' }]);
+    prisma.product.count.mockResolvedValue(1);
 
     const result = await service.findAll('tenant-1', {
       page: 2,
@@ -98,36 +73,29 @@ describe('ProductsService', () => {
       type: ProductType.SIMPLE,
     });
 
-    expect(prisma.$transaction).toHaveBeenCalledWith([
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        args: expect.objectContaining({
-          where: expect.objectContaining({
-            tenantId: 'tenant-1',
-            type: ProductType.SIMPLE,
-            sku: {
-              contains: 'BRD',
-              mode: 'insensitive',
-            },
-          }),
-          skip: 10,
-          take: 10,
+        where: expect.objectContaining({
+          tenantId: 'tenant-1',
+          type: ProductType.SIMPLE,
+          sku: {
+            contains: 'BRD',
+            mode: 'insensitive',
+          },
         }),
+        skip: 10,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
       }),
-      expect.objectContaining({
-        args: expect.objectContaining({
-          where: expect.objectContaining({
-            tenantId: 'tenant-1',
-          }),
-        }),
-      }),
-    ]);
+    );
     expect(redis.set).toHaveBeenCalled();
     expect(result).toEqual({
-      data: [{ id: 'product-1', name: 'Bread', variants: [] }],
-      meta: {
+      data: [{ id: 'product-1', name: 'Bread' }],
+      pagination: {
         page: 2,
         limit: 10,
         total: 1,
+        pages: 1,
       },
     });
   });

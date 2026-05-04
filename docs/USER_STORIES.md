@@ -680,6 +680,18 @@ Response: {
 
 ---
 
+#### US-ADMIN-030a: View Product History
+**As an Admin**, I want to view product history so that I can track inventory movements.
+
+**Acceptance Criteria:**
+- Shows inventory transactions (sales, purchases, transfers, adjustments)
+- Filter by transaction type
+- Support pagination
+
+**Endpoint:** `GET /products/:id/history`
+
+**Prerequisites:** Authenticated session
+
 ### 1.8 Category Management
 
 #### US-ADMIN-031: List Categories
@@ -923,6 +935,10 @@ Response: {
 
 #### US-ADMIN-051: View Customer Purchase History
 **As an Admin**, I want to view customer purchase history so that I can understand customer behavior.
+
+**Acceptance Criteria:**
+- Filter by date range (from/to)
+- Filter by minimum sale amount
 
 **Endpoint:** `GET /customers/:id/history`
 

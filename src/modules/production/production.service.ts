@@ -177,6 +177,54 @@ export class ProductionService {
     }));
   }
 
+  async getRecipes(context: AuthContext) {
+    const recipes = await this.prisma.recipe.findMany({
+      where: {
+        product: {
+          tenantId: context.tenantId,
+        },
+      },
+      include: {
+        items: {
+          include: {
+            rawMaterial: true,
+          },
+        },
+        product: true,
+      },
+    });
+
+    return recipes.map(recipe => {
+      const materialCost = recipe.items.reduce((sum, item) => {
+        return sum.add(new Prisma.Decimal(item.rawMaterial.cost || 0).mul(item.quantity));
+      }, new Prisma.Decimal(0));
+
+      const productPrice = new Prisma.Decimal(recipe.product.price || 0);
+      const margin = productPrice.sub(materialCost);
+      const marginPercent = materialCost.greaterThan(0) 
+        ? margin.div(productPrice).mul(100).toNumber() 
+        : 0;
+
+      return {
+        id: recipe.id,
+        productId: recipe.productId,
+        productName: recipe.product.name,
+        productSku: recipe.product.sku,
+        productPrice: productPrice.toNumber(),
+        materialCost: materialCost.toNumber(),
+        margin: margin.toNumber(),
+        marginPercent,
+        materials: recipe.items.map(item => ({
+          materialId: item.rawMaterialId,
+          materialName: item.rawMaterial.name,
+          quantity: item.quantity,
+          unitCost: item.rawMaterial.cost || 0,
+          totalCost: new Prisma.Decimal(item.rawMaterial.cost || 0).mul(item.quantity).toNumber(),
+        })),
+      };
+    });
+  }
+
   async getMaterials(context: AuthContext) {
     // Return raw materials from inventory
     const materials = await this.prisma.inventory.findMany({

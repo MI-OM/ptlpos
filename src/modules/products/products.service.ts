@@ -241,7 +241,7 @@ export class ProductsService {
 
       if (dto.variants && dto.variants.length > 0) {
         for (const variant of dto.variants) {
-          await tx.productVariant.create({
+          const createdVariant = await tx.productVariant.create({
             data: {
               productId: createdProduct.id,
               name: variant.name,
@@ -249,29 +249,55 @@ export class ProductsService {
               price: variant.price,
             },
           });
+          
+          // Create inventory row for each variant
+          await tx.inventory.create({
+            data: {
+              tenantId: context.tenantId,
+              productId: createdProduct.id,
+              productVariantId: createdVariant.id,
+              quantity: variant.openingQuantity ?? 0,
+            },
+          });
+          
+          if ((variant.openingQuantity ?? 0) > 0) {
+            await tx.inventoryTransaction.create({
+              data: {
+                tenantId: context.tenantId,
+                productId: createdProduct.id,
+                productVariantId: createdVariant.id,
+                type: InventoryTransactionType.OPENING,
+                quantity: variant.openingQuantity ?? 0,
+                balanceAfter: variant.openingQuantity ?? 0,
+                referenceType: 'product',
+                referenceId: createdProduct.id,
+              },
+            });
+          }
         }
-      }
-
-      await tx.inventory.create({
-        data: {
-          tenantId: context.tenantId,
-          productId: createdProduct.id,
-          quantity: dto.openingQuantity ?? 0,
-        },
-      });
-
-      if ((dto.openingQuantity ?? 0) > 0) {
-        await tx.inventoryTransaction.create({
+      } else {
+        // Create inventory row for simple product
+        await tx.inventory.create({
           data: {
             tenantId: context.tenantId,
             productId: createdProduct.id,
-            type: InventoryTransactionType.OPENING,
             quantity: dto.openingQuantity ?? 0,
-            balanceAfter: dto.openingQuantity ?? 0,
-            referenceType: 'product',
-            referenceId: createdProduct.id,
           },
         });
+        
+        if ((dto.openingQuantity ?? 0) > 0) {
+          await tx.inventoryTransaction.create({
+            data: {
+              tenantId: context.tenantId,
+              productId: createdProduct.id,
+              type: InventoryTransactionType.OPENING,
+              quantity: dto.openingQuantity ?? 0,
+              balanceAfter: dto.openingQuantity ?? 0,
+              referenceType: 'product',
+              referenceId: createdProduct.id,
+            },
+          });
+        }
       }
 
       return createdProduct;
@@ -629,6 +655,60 @@ export class ProductsService {
     }
 
     return product;
+  }
+
+  async getProductHistory(
+    tenantId: string,
+    productId: string,
+    page = 1,
+    limit = 20,
+    type?: string
+  ) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, tenantId },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const skip = (page - 1) * limit;
+    
+    const where: Prisma.InventoryTransactionWhereInput = {
+      tenantId,
+      productId,
+    };
+
+    if (type) {
+      where.type = type as InventoryTransactionType;
+    }
+
+    const [transactions, total] = await this.prisma.$transaction([
+      this.prisma.inventoryTransaction.findMany({
+        where,
+        include: {
+          product: true,
+          productVariant: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.inventoryTransaction.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data: transactions,
+      meta: {
+        page,
+        limit,
+        total,
+      },
+    };
   }
 
   async getCompositeWithInventory(tenantId: string, productId: string) {

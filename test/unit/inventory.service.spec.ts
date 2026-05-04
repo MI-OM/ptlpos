@@ -41,6 +41,11 @@ describe('InventoryService', () => {
   let audit: {
     log: jest.Mock;
   };
+  let redis: {
+    getJSON: jest.Mock;
+    setJSON: jest.Mock;
+    invalidatePattern: jest.Mock;
+  };
   let service: InventoryService;
 
   beforeEach(() => {
@@ -75,8 +80,13 @@ describe('InventoryService', () => {
     audit = {
       log: jest.fn(),
     };
+    redis = {
+      getJSON: jest.fn(),
+      setJSON: jest.fn(),
+      invalidatePattern: jest.fn(),
+    };
 
-    service = new InventoryService(prisma as never, audit as never);
+    service = new InventoryService(prisma as never, redis as never, audit as never);
   });
 
   it('rejects unsupported manual transaction types', async () => {
@@ -237,9 +247,31 @@ describe('InventoryService', () => {
           lte: 5,
         },
       },
-      include: {
-        product: true,
-        productVariant: true,
+      select: {
+        id: true,
+        tenantId: true,
+        branchId: true,
+        productId: true,
+        productVariantId: true,
+        quantity: true,
+        createdAt: true,
+        updatedAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            type: true,
+            price: true,
+          },
+        },
+        productVariant: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+          },
+        },
       },
       orderBy: [
         {

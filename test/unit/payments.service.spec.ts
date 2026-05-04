@@ -397,6 +397,14 @@ describe('PaymentsService', () => {
           salesCount: 1,
           refundCount: 0,
         },
+        {
+          method: PaymentMethod.STORE_CREDIT,
+          salesAmount: 0,
+          refundAmount: 0,
+          netAmount: 0,
+          salesCount: 0,
+          refundCount: 0,
+        },
       ],
     });
   });
