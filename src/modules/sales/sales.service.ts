@@ -22,6 +22,7 @@ import {
   RefundSaleItemDto,
   RefundSaleDto,
   QuerySalesDto,
+  UpdateSaleItemDto,
 } from './dto/create-sale.dto';
 import { ReceiptSettingsDto } from './dto/receipt-settings.dto';
 
@@ -287,6 +288,109 @@ export class SalesService {
       metadata: {
         entityName: `Sale #${saleId}`,
         saleItemId,
+      },
+    });
+
+    return updatedSale;
+  }
+
+  async updateItem(context: AuthContext, saleId: string, itemId: string, dto: UpdateSaleItemDto) {
+    const sale = await this.findOne(context.tenantId, saleId, context.branchId);
+    this.ensureEditableSale(sale.status);
+
+    const existingItem = sale.items.find(item => item.id === itemId);
+
+    if (!existingItem) {
+      throw new NotFoundException('Sale item not found');
+    }
+
+    const updatedSale = await this.prisma.$transaction(async tx => {
+      await tx.saleItem.update({
+        where: {
+          id: itemId,
+        },
+        data: {
+          quantity: dto.quantity,
+          price: dto.price !== undefined ? dto.price : existingItem.price,
+          discountAmount: dto.discountAmount !== undefined ? dto.discountAmount : existingItem.discountAmount,
+        },
+      });
+
+      return this.recalculateSaleTotals(tx, context.tenantId, saleId);
+    });
+
+    await this.audit.log({
+      tenantId: context.tenantId,
+      userId: context.userId,
+      action: 'SALE_ITEM_UPDATED',
+      entity: 'Sale',
+      entityId: saleId,
+      metadata: {
+        entityName: `Sale #${saleId}`,
+        saleItemId: itemId,
+        newQuantity: dto.quantity,
+      },
+    });
+
+    return updatedSale;
+  }
+
+  async addPayment(context: AuthContext, saleId: string, dto: any) {
+    const sale = await this.findOne(context.tenantId, saleId, context.branchId);
+    this.ensureEditableSale(sale.status);
+
+    const currentPaid = Number(sale.paidAmount || 0);
+    const total = Number(sale.totalAmount);
+    const paymentAmount = Number(dto.amount);
+
+    if (currentPaid + paymentAmount > total) {
+      throw new BadRequestException('Payment amount exceeds sale total');
+    }
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        tenantId: context.tenantId,
+        saleId,
+        method: dto.method,
+        amount: dto.amount,
+        reference: dto.reference,
+        direction: 'SALE',
+      },
+    });
+
+    const newPaidAmount = currentPaid + paymentAmount;
+    const status = newPaidAmount >= total ? SaleStatus.COMPLETED : sale.status;
+
+    const updatedSale = await this.prisma.sale.update({
+      where: { id: saleId },
+      data: {
+        paidAmount: newPaidAmount,
+        status,
+        ...(status === SaleStatus.COMPLETED && { completedAt: new Date() }),
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+            productVariant: true,
+          },
+        },
+        payments: true,
+        customer: true,
+      },
+    });
+
+    await this.audit.log({
+      tenantId: context.tenantId,
+      userId: context.userId,
+      action: 'PAYMENT_ADDED',
+      entity: 'Sale',
+      entityId: saleId,
+      metadata: {
+        entityName: `Sale #${saleId}`,
+        paymentId: payment.id,
+        amount: paymentAmount,
+        method: dto.method,
       },
     });
 

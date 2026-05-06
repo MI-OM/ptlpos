@@ -227,6 +227,38 @@ export class RemoveSaleItemDto {
   saleItemId!: string;
 }
 
+export class UpdateSaleItemDto {
+  @ApiProperty({
+    description: 'New quantity for the item',
+    example: 3,
+    required: true,
+    minimum: 1,
+  })
+  @IsNumber()
+  @IsPositive()
+  quantity!: number;
+
+  @ApiPropertyOptional({
+    description: 'New unit price (overrides default)',
+    example: 49.99,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  price?: number;
+
+  @ApiPropertyOptional({
+    description: 'New discount amount per item',
+    example: 5.00,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountAmount?: number;
+}
+
 export class QuerySalesDto {
   @ApiPropertyOptional({
     description: 'Page number for pagination',

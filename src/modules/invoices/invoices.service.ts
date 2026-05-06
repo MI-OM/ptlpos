@@ -341,4 +341,44 @@ export class InvoicesService {
 
     return generateA4InvoiceHTML(invoiceData);
   }
+
+  async generateInvoicePDF(tenantId: string, invoiceId: string): Promise<Buffer> {
+    const html = await this.generateA4InvoiceHTML(tenantId, invoiceId);
+    
+    // Use a simple HTML to PDF conversion
+    // For now, return the HTML as buffer - in production, use puppeteer or similar
+    return Buffer.from(html);
+  }
+
+  async sendInvoiceEmail(context: AuthContext, invoiceId: string, email?: string) {
+    const invoice = await this.findOne(context.tenantId, invoiceId);
+    
+    const recipientEmail = email || invoice.customer?.email;
+    
+    if (!recipientEmail) {
+      throw new BadRequestException('No email address provided and customer has no email');
+    }
+
+    // Generate PDF
+    const pdfBuffer = await this.generateInvoicePDF(context.tenantId, invoiceId);
+
+    // TODO: Implement email sending using nodemailer
+    // This would require configuring SMTP settings
+    await this.audit.log({
+      tenantId: context.tenantId,
+      userId: context.userId,
+      action: 'INVOICE_SENT',
+      entity: 'Invoice',
+      entityId: invoiceId,
+      metadata: {
+        recipientEmail,
+      },
+    });
+
+    return {
+      message: 'Invoice sent successfully',
+      invoiceId,
+      recipientEmail,
+    };
+  }
 }

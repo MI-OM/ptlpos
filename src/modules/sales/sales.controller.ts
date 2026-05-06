@@ -4,7 +4,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
-import { AddSaleItemDto, CreateSaleDto, SalePaymentDto, RefundSaleItemDto, CompleteSaleDto, RefundSaleDto, QuerySalesDto } from './dto/create-sale.dto';
+import { AddSaleItemDto, CreateSaleDto, SalePaymentDto, RefundSaleItemDto, CompleteSaleDto, RefundSaleDto, QuerySalesDto, UpdateSaleItemDto } from './dto/create-sale.dto';
 import { SalesService } from './sales.service';
 import { ReceiptSettingsDto } from './dto/receipt-settings.dto';
 import { ReturnExchangeDto } from './dto/return-exchange.dto';
@@ -173,6 +173,62 @@ export class SalesController {
     @Param('saleItemId') saleItemId: string
   ) {
     return this.salesService.removeItem(user, id, saleItemId);
+  }
+
+  @ApiOperation({ summary: 'Update sale item quantity or price' })
+  @ApiParam({ name: 'id', description: 'Sale ID' })
+  @ApiParam({ name: 'itemId', description: 'Sale Item ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Item updated successfully',
+    schema: {
+      example: {
+        id: 'item-123',
+        productId: 'product-123',
+        quantity: 3,
+        unitPrice: 49.99,
+        totalPrice: 149.97,
+        product: { name: 'Bread Loaf', sku: 'BREAD-001' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Sale or item not found' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
+  @Patch(':id/items/:itemId')
+  updateItem(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateSaleItemDto
+  ) {
+    return this.salesService.updateItem(user, id, itemId, dto);
+  }
+
+  @ApiOperation({ summary: 'Add payment to sale' })
+  @ApiParam({ name: 'id', description: 'Sale ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment added successfully',
+    schema: {
+      example: {
+        id: 'payment-123',
+        saleId: 'sale-123',
+        method: 'CASH',
+        amount: 50.00,
+        reference: 'CASH-001',
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Sale not found' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
+  @Post(':id/payments')
+  addPayment(
+    @CurrentUser() user: AuthContext,
+    @Param('id') id: string,
+    @Body() dto: SalePaymentDto
+  ) {
+    return this.salesService.addPayment(user, id, dto);
   }
 
   @ApiOperation({ summary: 'Hold a sale' })

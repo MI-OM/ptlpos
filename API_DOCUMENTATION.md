@@ -104,6 +104,7 @@ Content-Type: application/json
 | POST | `/auth/login/email` | **NEW** Login with email only (auto-discover tenant) | No |
 | POST | `/auth/refresh` | **NEW** Refresh access token using refresh token | No |
 | GET | `/auth/me` | Get current user profile | Yes |
+| POST | `/auth/change-password` | Change user password | Yes |
 | POST | `/auth/email/verify-request` | Request email verification | No |
 | POST | `/auth/email/verify` | Verify email with token | No |
 | POST | `/auth/password/reset-request` | Request password reset | No |
@@ -211,6 +212,7 @@ Content-Type: application/json
 | GET | `/tenants/me` | Get current organization details | Yes | Any |
 | PATCH | `/tenants/me` | Update organization name | Yes | Any |
 | PATCH | `/tenants/me/details` | Update detailed organization info | Yes | Any |
+| PATCH | `/tenants/me/settings` | Update tax and custom settings | Yes | ADMIN |
 
 #### Key Endpoints for Frontend
 
@@ -321,13 +323,14 @@ Content-Type: application/json
 | GET | `/products` | List all products | Yes | Any |
 | POST | `/products` | Create simple/variant product | Yes | ADMIN, MANAGER |
 | PATCH | `/products/:id` | Update product | Yes | ADMIN, MANAGER |
+| DELETE | `/products/:id` | Delete product | Yes | ADMIN |
+| GET | `/products/:id/history` | Get product inventory history | Yes | Any |
 | POST | `/products/composite` | Create composite product (bundle) | Yes | ADMIN, MANAGER |
 | GET | `/products/composite/:id` | Get composite product details | Yes | Any |
 | GET | `/products/composite/:id/inventory` | Get composite with inventory levels | Yes | Any |
-| POST | `/products/:id/upload-image` | **NEW** Upload single product image | Yes | ADMIN, MANAGER |
-| POST | `/products/:id/upload-images` | **NEW** Upload multiple product images | Yes | ADMIN, MANAGER |
-| DELETE | `/products/:id/images/:imageId` | **NEW** Delete product image | Yes | ADMIN, MANAGER |
-| DELETE | `/products/:id` | Delete product | Yes | ADMIN |
+| POST | `/products/:id/upload-image` | Upload single product image | Yes | ADMIN, MANAGER |
+| POST | `/products/:id/upload-images` | Upload multiple product images | Yes | ADMIN, MANAGER |
+| DELETE | `/products/:id/images/:imageId` | Delete product image | Yes | ADMIN, MANAGER |
 
 #### Key Endpoints for Frontend
 
@@ -467,18 +470,24 @@ Content-Type: application/json
 
 | Method | Endpoint | Description | Auth Required | Role Required |
 |---------|-----------|-------------|---------------|---------------|
+| GET | `/sales` | List sales with filters | Yes | Any |
 | POST | `/sales` | Create new sale | Yes | Any |
 | GET | `/sales/:id` | Get sale by ID | Yes | Any |
 | POST | `/sales/:id/items` | Add item to sale | Yes | Any |
+| PATCH | `/sales/:id/items/:itemId` | Update item quantity | Yes | Any |
 | DELETE | `/sales/:id/items/:saleItemId` | Remove item from sale | Yes | Any |
+| POST | `/sales/:id/payments` | Add payment to sale | Yes | Any |
 | POST | `/sales/:id/hold` | Put sale on hold | Yes | Any |
 | POST | `/sales/:id/resume` | Resume held sale | Yes | Any |
 | POST | `/sales/:id/complete` | Complete sale | Yes | Any |
 | POST | `/sales/:id/cancel` | Cancel sale | Yes | Any |
 | POST | `/sales/:id/refund` | Refund sale | Yes | Any |
+| POST | `/sales/:id/return-exchange` | Process return/exchange | Yes | Any |
 | GET | `/sales/:id/receipt` | Get sale receipt | Yes | Any |
 | GET | `/sales/:id/receipt/print` | Get printable receipt (HTML) | Yes | Any |
 | GET | `/sales/:id/receipt/print-job` | Get receipt for print job | Yes | Any |
+| GET | `/sales/settings/receipt` | Get receipt settings | Yes | ADMIN, MANAGER |
+| PATCH | `/sales/settings/receipt` | Update receipt settings | Yes | ADMIN, MANAGER |
 
 #### Key Endpoints for Frontend
 
@@ -589,6 +598,11 @@ Content-Type: application/json
 | GET | `/customers/:id/history` | Get customer purchase history | Yes | Any |
 | POST | `/customers` | Create new customer | Yes | Any |
 | PATCH | `/customers/:id` | Update customer | Yes | Any |
+| DELETE | `/customers/:id` | Delete customer | Yes | ADMIN, MANAGER |
+| POST | `/customers/:id/credit/add` | Add store credit | Yes | ADMIN, MANAGER |
+| POST | `/customers/:id/credit/deduct` | Deduct store credit | Yes | Any |
+| GET | `/customers/:id/credit` | Get credit balance | Yes | Any |
+| GET | `/customers/:id/credit/transactions` | Get credit transaction history | Yes | Any |
 
 #### Key Endpoints for Frontend
 
@@ -621,6 +635,7 @@ Authorization: Bearer <token>
 | GET | `/suppliers/:id` | Get supplier by ID | Yes | Any |
 | POST | `/suppliers` | Create new supplier | Yes | Any |
 | PATCH | `/suppliers/:id` | Update supplier | Yes | Any |
+| DELETE | `/suppliers/:id` | Delete supplier | Yes | ADMIN, MANAGER |
 
 #### Key Endpoints for Frontend
 
@@ -668,6 +683,55 @@ Content-Type: application/json
 **Get Cash Drawer Summary**
 ```http
 GET /api/payments/cash-drawer?from=2025-12-01&to=2025-12-31&countedCash=1500.00
+Authorization: Bearer <token>
+```
+
+---
+
+### Shifts (`/api/shifts`)
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|---------|-----------|-------------|---------------|---------------|
+| GET | `/shifts` | List shifts with filters | Yes | Any |
+| GET | `/shifts/active` | Get active shift for current user | Yes | Any |
+| GET | `/shifts/:id` | Get shift by ID | Yes | Any |
+| POST | `/shifts/open` | Open new shift | Yes | Any |
+| POST | `/shifts/:id/close` | Close shift | Yes | Any |
+| POST | `/shifts/:id/reconcile` | Reconcile shift | Yes | ADMIN, MANAGER |
+| GET | `/shifts/cash-drawer/summary` | Get cash drawer summary for active shift | Yes | Any |
+| GET | `/shifts/reports/end-of-day` | Get end-of-day report | Yes | ADMIN, MANAGER |
+| GET | `/shifts/reports/end-of-shift` | Get end-of-shift report | Yes | Any |
+
+#### Key Endpoints for Frontend
+
+**Open Shift**
+```http
+POST /api/shifts/open
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "openingBalance": 100.00,
+  "drawerType": "CASH"
+}
+```
+
+**Close Shift**
+```http
+POST /api/shifts/shift-123/close
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "countedCash": 1250.00,
+  "countedCard": 500.00,
+  "countedOther": 50.00
+}
+```
+
+**Get Cash Drawer Summary**
+```http
+GET /api/shifts/cash-drawer/summary
 Authorization: Bearer <token>
 ```
 
@@ -734,6 +798,8 @@ Content-Type: application/json
 | GET | `/invoices/:id` | Get invoice by ID | Yes | Any |
 | POST | `/invoices` | Create invoice from sale | Yes | ADMIN, MANAGER |
 | GET | `/invoices/:id/a4` | Generate A4 invoice HTML | Yes | Any |
+| GET | `/invoices/:id/pdf` | Generate invoice PDF | Yes | Any |
+| POST | `/invoices/:id/send` | Send invoice via email | Yes | ADMIN, MANAGER |
 
 #### Key Endpoints for Frontend
 
@@ -801,15 +867,63 @@ Content-Type: application/json
 
 ### Analytics (`/api/analytics`)
 
-| Method | Endpoint | Description | Auth Required |
-|---------|-----------|-------------|---------------|
-| GET | `/analytics/dashboard` | Get dashboard analytics | Yes |
+| Method | Endpoint | Description | Auth Required | Role Required |
+|---------|-----------|-------------|---------------|---------------|
+| GET | `/analytics/dashboard` | Get dashboard analytics | Yes | ADMIN, MANAGER |
 
 #### Key Endpoints for Frontend
 
 **Get Dashboard Analytics**
 ```http
 GET /api/analytics/dashboard?from=2025-12-01&to=2025-12-31
+Authorization: Bearer <token>
+```
+
+---
+
+### Dashboard (`/api/dashboard`)
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|---------|-----------|-------------|---------------|---------------|
+| GET | `/dashboard/stats` | Get dashboard statistics | Yes | Any |
+
+#### Key Endpoints for Frontend
+
+**Get Dashboard Stats**
+```http
+GET /api/dashboard/stats
+Authorization: Bearer <token>
+```
+
+---
+
+### Roles (`/api/roles`)
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|---------|-----------|-------------|---------------|---------------|
+| GET | `/roles` | List all available roles | Yes | ADMIN, MANAGER |
+
+#### Key Endpoints for Frontend
+
+**List Roles**
+```http
+GET /api/roles
+Authorization: Bearer <token>
+```
+
+---
+
+### Metrics (`/api/metrics`)
+
+| Method | Endpoint | Description | Auth Required | Role Required |
+|---------|-----------|-------------|---------------|---------------|
+| GET | `/metrics` | Get system metrics | Yes | SUPER_ADMIN |
+
+#### Key Endpoints for Frontend
+
+**Get System Metrics**
+```http
+GET /api/metrics
 Authorization: Bearer <token>
 ```
 
