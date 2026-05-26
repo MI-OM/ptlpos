@@ -113,6 +113,21 @@ export class EmailService {
     });
   }
 
+  async sendVerificationEmail(
+    email: string,
+    name: string,
+    verificationUrl: string,
+  ): Promise<boolean> {
+    const html = this.getVerificationTemplate(name, verificationUrl);
+
+    return this.sendEmail({
+      to: email,
+      subject: `${this.appName} - Verify Your Email`,
+      html,
+      text: `Click here to verify your email: ${verificationUrl}`,
+    });
+  }
+
   async sendWelcomeEmail(
     email: string,
     name: string,
@@ -190,6 +205,43 @@ export class EmailService {
               <p>Or copy this link: <a href="${resetUrl}">${resetUrl}</a></p>
               <p><strong>Security Note:</strong> This link will expire in 24 hours. If you didn't request this, please ignore this email.</p>
               <p>If you're having trouble, you can also use this code: <code>${resetToken}</code></p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} ${this.appName}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  private getVerificationTemplate(name: string, verificationUrl: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #007bff; padding: 20px; text-align: center; color: white; }
+            .content { padding: 20px; }
+            .button { display: inline-block; padding: 12px 30px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2>Verify Your Email</h2>
+            </div>
+            <div class="content">
+              <p>Hi ${name},</p>
+              <p>Thank you for creating an account with ${this.appName}! Please verify your email address by clicking the button below:</p>
+              <a href="${verificationUrl}" class="button">Verify Email</a>
+              <p>Or copy this link: <a href="${verificationUrl}">${verificationUrl}</a></p>
+              <p><strong>Note:</strong> This link will expire in 24 hours.</p>
+              <p>If you didn't create an account, please ignore this email.</p>
             </div>
             <div class="footer">
               <p>&copy; ${new Date().getFullYear()} ${this.appName}. All rights reserved.</p>

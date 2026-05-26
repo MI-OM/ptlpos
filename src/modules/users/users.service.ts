@@ -1,9 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RoleName } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../../core/database/prisma.service';
 import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -11,7 +14,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   findAll(tenantId: string) {
@@ -22,12 +27,21 @@ export class UsersService {
         name: true,
         email: true,
         tenantId: true,
+        isEmailVerified: true,
+        status: true,
+        lastLoginAt: true,
         role: {
           select: {
             name: true,
           },
         },
+        tenant: {
+          select: {
+            name: true,
+          },
+        },
         createdAt: true,
+        updatedAt: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -46,12 +60,21 @@ export class UsersService {
         name: true,
         email: true,
         tenantId: true,
+        isEmailVerified: true,
+        status: true,
+        lastLoginAt: true,
         role: {
           select: {
             name: true,
           },
         },
+        tenant: {
+          select: {
+            name: true,
+          },
+        },
         createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -113,6 +136,27 @@ export class UsersService {
         role: dto.role,
       },
     });
+
+    // Send verification email
+    try {
+      const token = randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await this.prisma.verificationToken.create({
+        data: {
+          tenantId: context.tenantId,
+          email,
+          token,
+          expiresAt,
+        },
+      });
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
+      await this.emailService.sendVerificationEmail(email, dto.name, verificationUrl);
+    } catch (err) {
+      // Log but don't fail user creation if email sending fails
+      console.error('Failed to send verification email:', err);
+    }
 
     return {
       id: user.id,

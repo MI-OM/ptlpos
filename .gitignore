@@ -1,7 +1,7 @@
-node_modules
-dist
+node_modules/
+dist/
+.next/
 .env
-coverage
-.DS_Store
-npm-debug.log*
-tsconfig.build.tsbuildinfo
+.env.local
+*.log
+jq/

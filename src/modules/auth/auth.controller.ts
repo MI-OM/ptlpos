@@ -51,8 +51,6 @@ export class AuthController {
         emailVerification: {
           message: 'Verification token sent. Check your email.',
           email: 'contact@acme.com',
-          token: 'abc123def456...',
-          expiresAt: '2025-12-02T12:00:00Z',
         },
       },
     },
@@ -203,18 +201,16 @@ export class AuthController {
     summary: 'Request email verification token',
     description: 'Send a verification token to the organization email. No authentication required.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Verification token sent',
-    schema: {
-      example: {
-        message: 'Verification token sent. Check your email.',
-        email: 'contact@acme.com',
-        token: 'abc123def456...',
-        expiresAt: '2025-12-02T12:00:00Z',
-      },
-    },
-  })
+      @ApiResponse({
+        status: 200,
+        description: 'Verification token sent',
+        schema: {
+          example: {
+            message: 'Verification token sent. Check your email.',
+            email: 'contact@acme.com',
+          },
+        },
+      })
   requestEmailVerification(
     @Body() dto: RequestEmailVerificationDto,
     @CurrentUser() user?: AuthContext

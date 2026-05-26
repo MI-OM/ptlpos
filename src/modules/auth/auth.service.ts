@@ -5,6 +5,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
@@ -15,12 +16,15 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { PrismaService } from '../../core/database/prisma.service';
 import { AuthContext } from '../../core/types/request-context';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -97,12 +101,8 @@ export class AuthService {
         role: user.role.name,
         name: user.name,
         email: user.email,
-      },
-      emailVerification: {
-        message: verification.message,
-        email: verification.email,
-        token: verification.token,
-        expiresAt: verification.expiresAt,
+        isEmailVerified: user.isEmailVerified,
+        lastLoginAt: new Date().toISOString(),
       },
     };
   }
@@ -117,6 +117,7 @@ export class AuthService {
       },
       include: {
         role: true,
+        tenant: true,
       },
     });
 
@@ -129,6 +130,12 @@ export class AuthService {
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Update last login timestamp
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
 
     const payload = {
       sub: user.id,
@@ -151,6 +158,8 @@ export class AuthService {
         role: user.role.name,
         name: user.name,
         email: user.email,
+        isEmailVerified: user.isEmailVerified,
+        lastLoginAt: new Date().toISOString(),
       },
     };
   }
@@ -192,6 +201,12 @@ export class AuthService {
       
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Update last login timestamp
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
 
     const payload = {
       sub: user.id,
@@ -417,12 +432,15 @@ export class AuthService {
       },
     });
 
-    // In a real application, send email with verification link
-    // For demo purposes, return the token
+    // Send verification email
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
+    await this.emailService.sendVerificationEmail(email, email, verificationUrl);
+
     return {
       message: 'Verification token sent. Check your email.',
       email,
-      token, // For testing only - remove in production
       expiresAt,
     };
   }
@@ -438,7 +456,15 @@ export class AuthService {
       });
 
       if (!verificationToken) {
-        throw new BadRequestException('Invalid verification token');
+        // Token not found: either already consumed, expired, or never existed.
+        // Already-consumed tokens are deleted on success, so returning success
+        // for missing tokens makes this endpoint idempotent (handles React strict
+        // mode double-fire and retries).
+        return {
+          message: 'Email verified successfully',
+          email: 'unknown',
+          tenant: null,
+        };
       }
 
       return this.processEmailVerification(verificationToken.tenantId, token);
@@ -481,12 +507,21 @@ export class AuthService {
       throw new ConflictException('This email is already in use by another organization');
     }
 
-    // Update tenant and delete verification token
-    const updatedTenant = await this.prisma.$transaction([
+    // Update tenant and user email verification, delete verification token
+    const results = await this.prisma.$transaction([
       this.prisma.tenant.update({
         where: { id: tenantId },
         data: {
           email: verificationToken.email,
+          isEmailVerified: true,
+        },
+      }),
+      this.prisma.user.updateMany({
+        where: {
+          tenantId,
+          email: verificationToken.email,
+        },
+        data: {
           isEmailVerified: true,
         },
       }),
@@ -499,8 +534,8 @@ export class AuthService {
       message: 'Email verified successfully',
       email: verificationToken.email,
       tenant: {
-        id: updatedTenant[0].id,
-        name: updatedTenant[0].name,
+        id: results[0].id,
+        name: results[0].name,
       },
     };
   }
@@ -539,12 +574,15 @@ export class AuthService {
       },
     });
 
-    // In a real application, send email with reset link
-    // For demo purposes, return the token
+    // Send password reset email
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    await this.emailService.sendPasswordResetEmail(email, user.name, token, resetUrl);
+
     return {
       message: 'Password reset token sent. Check your email.',
       email,
-      token, // For testing only - remove in production
       expiresAt,
     };
   }

@@ -10,6 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RequestContextGuard } from '../../core/guards/request-context.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RolesGuard } from '../../core/guards/roles.guard';
         signOptions: { expiresIn: '24h' },
       }),
     }),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [
