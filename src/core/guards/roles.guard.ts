@@ -11,7 +11,8 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RequestWithContext>();
 
     // Skip admin routes — they use AdminJwtAuthGuard + AdminRolesGuard
-    if (request.url && request.url.startsWith('/api/admin/')) {
+    const requestPath = request.originalUrl?.split('?')[0] || request.url?.split('?')[0];
+    if (requestPath && (requestPath.startsWith('/api/admin/') || requestPath.startsWith('/admin/'))) {
       return true;
     }
 
