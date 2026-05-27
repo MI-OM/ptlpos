@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { RoleName } from '@prisma/client';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { RunProductionDto } from './dto/run-production.dto';
 import { ProductionService } from './production.service';
@@ -11,6 +13,7 @@ import { ProductionService } from './production.service';
 export class ProductionController {
   constructor(private readonly productionService: ProductionService) {}
 
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Post('run')
   @ApiOperation({ summary: 'Run a production batch' })
   @ApiResponse({ status: 201, description: 'Production batch created successfully' })

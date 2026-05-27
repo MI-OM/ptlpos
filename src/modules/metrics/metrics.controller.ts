@@ -1,9 +1,12 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../../core/decorators/public.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { RoleName } from '@prisma/client';
 import { MetricsService, HealthStatus } from './metrics.service';
 
 @ApiTags('Metrics')
+@ApiBearerAuth()
 @Controller('metrics')
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
@@ -49,9 +52,10 @@ export class MetricsController {
     };
   }
 
-  @ApiOperation({ summary: 'Get raw metrics data' })
+  @ApiOperation({ summary: 'Get raw metrics data (Admin only)' })
   @ApiResponse({ status: 200, description: 'Raw metrics data' })
   @ApiQuery({ name: 'name', required: false, description: 'Metric name to filter by' })
+  @Roles(RoleName.ADMIN)
   @Get()
   getMetrics(@Query('name') name?: string) {
     return {

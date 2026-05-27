@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Post,
+  Delete,
   Query,
   Param,
   Body,
@@ -23,7 +24,7 @@ import { AssignTicketDto } from './dto/assign-ticket.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 @ApiBearerAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -82,6 +83,15 @@ export class AdminController {
     return this.adminService.getPlans();
   }
 
+  @Get('plans/:id')
+  @Roles('SUPER_ADMIN', 'BILLING_ADMIN')
+  @ApiOperation({ summary: 'Get subscription plan by ID' })
+  @ApiResponse({ status: 200, description: 'Plan retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Plan not found' })
+  async getPlan(@Param('id') id: string) {
+    return this.adminService.getPlan(id);
+  }
+
   @Post('plans')
   @Roles('SUPER_ADMIN', 'BILLING_ADMIN')
   @ApiOperation({ summary: 'Create new subscription plan' })
@@ -101,6 +111,16 @@ export class AdminController {
     return this.adminService.updatePlan(id, updatePlanDto);
   }
 
+  @Delete('plans/:id')
+  @Roles('SUPER_ADMIN', 'BILLING_ADMIN')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete subscription plan' })
+  @ApiResponse({ status: 200, description: 'Plan deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Plan not found' })
+  async deletePlan(@Param('id') id: string) {
+    return this.adminService.deletePlan(id);
+  }
+
   @Get('subscriptions')
   @Roles('SUPER_ADMIN', 'BILLING_ADMIN')
   @ApiOperation({ summary: 'Get all subscriptions' })
@@ -115,6 +135,15 @@ export class AdminController {
       limit: limit || 20,
       status,
     });
+  }
+
+  @Get('subscriptions/:id')
+  @Roles('SUPER_ADMIN', 'BILLING_ADMIN')
+  @ApiOperation({ summary: 'Get subscription details' })
+  @ApiResponse({ status: 200, description: 'Subscription details retrieved' })
+  @ApiResponse({ status: 404, description: 'Subscription not found' })
+  async getSubscription(@Param('id') id: string) {
+    return this.adminService.getSubscription(id);
   }
 
   @Put('subscriptions/:id')

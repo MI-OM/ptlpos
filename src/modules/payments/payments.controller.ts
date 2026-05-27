@@ -1,14 +1,19 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { PaymentStatus } from '@prisma/client';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { PaymentStatus, RoleName } from '@prisma/client';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentsService } from './payments.service';
 
+@ApiTags('Payments')
+@ApiBearerAuth()
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('reconciliation')
   reconciliation(
     @CurrentUser() user: AuthContext,
@@ -21,6 +26,7 @@ export class PaymentsController {
     });
   }
 
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('cash-drawer')
   cashDrawerSummary(
     @CurrentUser() user: AuthContext,
@@ -36,6 +42,7 @@ export class PaymentsController {
     });
   }
 
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('by-status/:status')
   findByStatus(
     @CurrentUser() user: AuthContext,
@@ -49,11 +56,13 @@ export class PaymentsController {
     );
   }
 
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
   @Post()
   create(@CurrentUser() user: AuthContext, @Body() dto: CreatePaymentDto) {
     return this.paymentsService.create(user, dto);
   }
 
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Put(':id/status/:newStatus')
   updateStatus(
     @CurrentUser() user: AuthContext,

@@ -30,7 +30,7 @@ export class RequestContextGuard implements CanActivate {
     const authHeader = request.header('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
-        const token = authHeader.substring(7); // Remove "Bearer " prefix
+        const token = authHeader.substring(7);
         const secret =
           this.configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production';
         const payload = jwt.verify(token, secret) as any;
@@ -38,12 +38,12 @@ export class RequestContextGuard implements CanActivate {
         const { sub, tenantId, role, type } = payload;
         const branchId = payload.branchId || request.header('x-branch-id');
         
-        // Handle admin tokens
+        // Handle admin tokens — set the actual admin role (e.g. SUPER_ADMIN)
         if (type === 'admin') {
           request.auth = {
             tenantId: null,
             userId: sub,
-            role: 'ADMIN',
+            role: role || 'SUPER_ADMIN',
             branchId: null,
           };
           return true;
@@ -84,25 +84,9 @@ export class RequestContextGuard implements CanActivate {
       return true;
     }
 
-    // Fall back to header-based auth for backward compatibility
-    const tenantId = request.header('x-tenant-id');
-    const userId = request.header('x-user-id');
-    const role = request.header('x-user-role') as RoleName | undefined;
-    const branchId = request.header('x-branch-id');
-
-    if (tenantId && userId && role && Object.values(RoleName).includes(role)) {
-      request.auth = {
-        tenantId,
-        userId,
-        role,
-        branchId: branchId || undefined,
-      };
-      return true;
-    }
-
     // Only throw if not public AND no auth provided
     throw new UnauthorizedException(
-      'Missing authentication: provide JWT Bearer token or headers (x-tenant-id, x-user-id, x-user-role)'
+      'Missing authentication: provide JWT Bearer token'
     );
   }
 }

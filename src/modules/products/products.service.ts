@@ -23,7 +23,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { CompositeProductDto } from './dto/composite-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { UploadProductImageDto } from './dto/upload-product-image.dto';
 import { UploadProductImageResponseDto } from './dto/upload-product-image-response.dto';
 import { RedisService } from '../../core/database/redis.service';
 import { AuditService } from '../audit/audit.service';
@@ -360,20 +359,25 @@ export class ProductsService {
   async uploadProductImage(
     user: AuthContext,
     productId: string,
-    uploadDto: UploadProductImageDto,
+    file: MulterFile,
+    metadata?: {
+      alt?: string;
+      caption?: string;
+      tags?: string[];
+    },
   ) {
-    if (!uploadDto.file) {
+    if (!file) {
       throw new BadRequestException('No file provided');
     }
 
     try {
       const uploadResult = await this.supabaseStorage.uploadProductImage(
         productId,
-        uploadDto.file as MulterFile,
+        file,
         {
-          alt: uploadDto.metadata?.alt || '',
-          caption: uploadDto.metadata?.caption || '',
-          tags: uploadDto.metadata?.tags || [],
+          alt: metadata?.alt || '',
+          caption: metadata?.caption || '',
+          tags: metadata?.tags || [],
         },
       );
 
@@ -396,8 +400,8 @@ export class ProductsService {
         entityId: productId,
         metadata: {
           action: 'Product image uploaded to Supabase',
-          filename: uploadDto.file.originalname,
-          size: uploadDto.file.size,
+          filename: file.originalname,
+          size: file.size,
           imageUrl: uploadResult.imageUrl,
         },
       });

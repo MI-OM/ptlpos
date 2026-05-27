@@ -85,6 +85,7 @@ export class SalesController {
     status: 200,
     description: 'Receipt settings retrieved successfully',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('settings/receipt')
   getReceiptSettings(@CurrentUser() user: AuthContext) {
     return this.salesService.getReceiptSettings(user);
@@ -95,6 +96,7 @@ export class SalesController {
     status: 200,
     description: 'Receipt settings updated successfully',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Patch('settings/receipt')
   updateReceiptSettings(@CurrentUser() user: AuthContext, @Body() dto: ReceiptSettingsDto) {
     return this.salesService.updateReceiptSettings(user, dto);

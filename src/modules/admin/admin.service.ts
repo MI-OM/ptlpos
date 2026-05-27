@@ -235,6 +235,32 @@ export class AdminService {
     });
   }
 
+  async getPlan(id: string) {
+    const plan = await this.prisma.subscriptionPlan.findUnique({
+      where: { id },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Subscription plan not found');
+    }
+
+    return plan;
+  }
+
+  async deletePlan(id: string) {
+    const plan = await this.prisma.subscriptionPlan.findUnique({
+      where: { id },
+    });
+
+    if (!plan) {
+      throw new NotFoundException('Subscription plan not found');
+    }
+
+    return this.prisma.subscriptionPlan.delete({
+      where: { id },
+    });
+  }
+
   async createPlan(createPlanDto: CreateSubscriptionDto) {
     return this.prisma.subscriptionPlan.create({
       data: createPlanDto,
@@ -291,6 +317,29 @@ export class AdminService {
         totalPages: Math.ceil(total / params.limit),
       },
     };
+  }
+
+  async getSubscription(id: string) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            status: true,
+          },
+        },
+        plan: true,
+      },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    return subscription;
   }
 
   async changeSubscription(id: string, changeSubscriptionDto: UpdateSubscriptionDto) {
@@ -542,9 +591,10 @@ export class AdminService {
 
     // Get total revenue using raw query to avoid TypeScript issues
     const revenueResult = await this.prisma.$queryRaw`
-      SELECT COALESCE(SUM("price"), 0) as total 
-      FROM "Subscription" 
-      WHERE status = ${SubscriptionStatus.ACTIVE}
+      SELECT COALESCE(SUM(p."price"), 0) as total 
+      FROM "Subscription" s 
+      JOIN "SubscriptionPlan" p ON s."planId" = p."id"
+      WHERE s.status = ${SubscriptionStatus.ACTIVE}::text::"SubscriptionStatus"
     ` as any[];
 
     return {
@@ -615,13 +665,14 @@ export class AdminService {
     // Use raw query to avoid TypeScript issues
     const revenueData = await this.prisma.$queryRaw`
       SELECT 
-        "planId",
+        s."planId",
         COUNT(*) as count,
-        COALESCE(SUM("price"), 0) as total
-      FROM "Subscription" 
-      WHERE "startDate" >= ${startDate}
-        AND status = ${SubscriptionStatus.ACTIVE}
-      GROUP BY "planId"
+        COALESCE(SUM(p."price"), 0) as total
+      FROM "Subscription" s
+      JOIN "SubscriptionPlan" p ON s."planId" = p."id"
+      WHERE s."startDate" >= ${startDate}
+        AND s.status = ${SubscriptionStatus.ACTIVE}::text::"SubscriptionStatus"
+      GROUP BY s."planId"
     ` as any[];
 
     return revenueData;

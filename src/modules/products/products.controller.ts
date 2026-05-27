@@ -11,7 +11,6 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { CompositeProductDto } from './dto/composite-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { UploadProductImageDto } from './dto/upload-product-image.dto';
 import { UploadProductImageResponseDto } from './dto/upload-product-image-response.dto';
 import { ProductsService } from './products.service';
 
@@ -161,14 +160,16 @@ export class ProductsController {
     description: 'Product image uploaded successfully',
     type: UploadProductImageResponseDto,
   })
+  @UseInterceptors(FileInterceptor('file'))
   @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Post(':id/upload-image')
-  uploadProductImage(
+  async uploadProductImage(
     @CurrentUser() user: AuthContext,
     @Param('id') id: string,
-    @Body() uploadDto: UploadProductImageDto,
+    @UploadedFile() file: MulterFile,
+    @Body() metadata?: { alt?: string; caption?: string; tags?: string[] },
   ) {
-    return this.productsService.uploadProductImage(user, id, uploadDto);
+    return this.productsService.uploadProductImage(user, id, file, metadata);
   }
 
   @ApiOperation({ summary: 'Upload multiple product images' })

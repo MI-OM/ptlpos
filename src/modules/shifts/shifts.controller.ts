@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { RoleName } from '@prisma/client';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { OpenShiftDto, CloseShiftDto, QueryShiftsDto } from './dto/create-shift.dto';
 import { ReconcileShiftDto } from './dto/reconcile-shift.dto';
@@ -18,6 +20,7 @@ export class ShiftsController {
     status: 201,
     description: 'Shift opened successfully',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
   @Post('open')
   openShift(@CurrentUser() user: AuthContext, @Body() dto: OpenShiftDto) {
     return this.shiftsService.openShift(user, dto);
@@ -29,6 +32,7 @@ export class ShiftsController {
     status: 200,
     description: 'Shift closed successfully',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Post(':id/close')
   closeShift(@CurrentUser() user: AuthContext, @Param('id') id: string, @Body() dto: CloseShiftDto) {
     return this.shiftsService.closeShift(user, id, dto);
@@ -83,6 +87,7 @@ export class ShiftsController {
     status: 200,
     description: 'Shift reconciled successfully',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Post(':id/reconcile')
   reconcileShift(@CurrentUser() user: AuthContext, @Param('id') id: string, @Body() dto: ReconcileShiftDto) {
     return this.shiftsService.reconcileShift(user, id, dto);
@@ -95,6 +100,7 @@ export class ShiftsController {
     status: 200,
     description: 'End of day report',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('reports/end-of-day')
   getEndOfDayReport(@CurrentUser() user: AuthContext, @Query() query: EndOfDayReportQueryDto) {
     return this.shiftsService.getEndOfDayReport(user, query.date, query.branchId);
@@ -106,6 +112,7 @@ export class ShiftsController {
     status: 200,
     description: 'End of shift report',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('reports/end-of-shift')
   getEndOfShiftReport(@CurrentUser() user: AuthContext, @Query() query: EndOfShiftReportQueryDto) {
     return this.shiftsService.getEndOfShiftReport(user, query.shiftId);
@@ -120,6 +127,7 @@ export class ShiftsController {
     status: 200,
     description: 'Sales performance report',
   })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('reports/sales-performance')
   getSalesPerformance(@CurrentUser() user: AuthContext, @Query() query: SalesPerformanceQueryDto) {
     return this.shiftsService.getSalesPerformance(user, query.userId, query.from, query.to, query.branchId);

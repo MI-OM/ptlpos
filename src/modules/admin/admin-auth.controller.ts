@@ -12,7 +12,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { AdminAuthService } from './admin-auth.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminRegisterDto } from './dto/admin-register.dto';
-import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { AdminJwtAuthGuard } from '../../core/guards/admin-jwt-auth.guard';
 import { Public } from '../../core/decorators/public.decorator';
 
@@ -52,7 +51,7 @@ export class AdminAuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Admin logout' })

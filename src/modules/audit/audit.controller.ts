@@ -1,12 +1,18 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import { RoleName } from '@prisma/client';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from './audit.service';
 
+@ApiTags('Audit')
+@ApiBearerAuth()
 @Controller('audit')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
+  @Roles(RoleName.ADMIN)
   @Get()
   findAll(
     @CurrentUser() user: AuthContext,

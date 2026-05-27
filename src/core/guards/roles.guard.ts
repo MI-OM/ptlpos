@@ -8,6 +8,13 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<RequestWithContext>();
+
+    // Skip admin routes — they use AdminJwtAuthGuard + AdminRolesGuard
+    if (request.url && request.url.startsWith('/api/admin/')) {
+      return true;
+    }
+
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -17,7 +24,6 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<RequestWithContext>();
     const role = request.auth?.role;
 
     if (!role || !requiredRoles.includes(role)) {

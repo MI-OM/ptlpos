@@ -1,9 +1,13 @@
 import { Injectable, ExecutionContext, UnauthorizedException, CanActivate } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AdminJwtAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private configService: ConfigService
+  ) {}
 
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
@@ -16,11 +20,10 @@ export class AdminJwtAuthGuard implements CanActivate {
     const token = authHeader.substring(7);
     
     try {
+      const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'your-secret-key',
+        secret,
       });
-      
-      console.log('AdminJwtAuthGuard - Token payload:', payload);
       
       // Verify this is an admin token
       if (payload.type !== 'admin') {
@@ -29,10 +32,9 @@ export class AdminJwtAuthGuard implements CanActivate {
 
       // Attach admin user to request
       request.user = payload;
-      console.log('AdminJwtAuthGuard - User set in request:', request.user);
       return true;
     } catch (error) {
-      console.log('AdminJwtAuthGuard - Error:', error.message);
+      if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

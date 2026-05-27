@@ -1,7 +1,9 @@
 import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { RoleName } from '@prisma/client';
 import { CurrentUser } from '../../core/decorators/current-user.decorator';
 import { Public } from '../../core/decorators/public.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { AuthContext } from '../../core/types/request-context';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
@@ -132,9 +134,10 @@ export class TenantsController {
 
   @Patch('me/settings')
   @ApiBearerAuth()
+  @Roles(RoleName.ADMIN)
   @ApiOperation({
     summary: 'Update organization settings',
-    description: 'Update organization settings including tax rate and other configuration. Requires authentication.',
+    description: 'Update organization settings including tax rate and other configuration. Requires ADMIN role.',
   })
   @ApiResponse({
     status: 200,
