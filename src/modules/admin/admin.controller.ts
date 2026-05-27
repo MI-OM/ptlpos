@@ -226,9 +226,9 @@ export class AdminController {
   @ApiOperation({ summary: 'Get usage analytics' })
   @ApiResponse({ status: 200, description: 'Usage analytics retrieved' })
   async getUsageAnalytics(
-    @Query('period') period?: 'daily' | 'weekly' | 'monthly',
+    @Query('period') period?: string,
   ) {
-    return this.adminService.getUsageAnalytics(period || 'monthly');
+    return this.adminService.getUsageAnalytics(period || '30d');
   }
 
   @Get('analytics/revenue')
@@ -236,8 +236,8 @@ export class AdminController {
   @ApiOperation({ summary: 'Get revenue analytics' })
   @ApiResponse({ status: 200, description: 'Revenue analytics retrieved' })
   async getRevenueAnalytics(
-    @Query('period') period?: 'daily' | 'weekly' | 'monthly',
+    @Query('period') period?: string,
   ) {
-    return this.adminService.getRevenueAnalytics(period || 'monthly');
+    return this.adminService.getRevenueAnalytics(period || '30d');
   }
 }

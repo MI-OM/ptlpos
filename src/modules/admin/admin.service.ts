@@ -613,22 +613,8 @@ export class AdminService {
     };
   }
 
-  async getUsageAnalytics(period: 'daily' | 'weekly' | 'monthly') {
-    // Implementation for usage analytics based on period
-    const now = new Date();
-    let startDate: Date;
-
-    switch (period) {
-      case 'daily':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days
-        break;
-      case 'weekly':
-        startDate = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000); // 12 weeks
-        break;
-      case 'monthly':
-        startDate = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000); // 12 months
-        break;
-    }
+  async getUsageAnalytics(period: string) {
+    const startDate = this.parsePeriod(period);
 
     const usageMetrics = await this.prisma.usageMetrics.groupBy({
       by: ['metric'],
@@ -645,22 +631,8 @@ export class AdminService {
     return usageMetrics;
   }
 
-  async getRevenueAnalytics(period: 'daily' | 'weekly' | 'monthly') {
-    // Implementation for revenue analytics based on period
-    const now = new Date();
-    let startDate: Date;
-
-    switch (period) {
-      case 'daily':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case 'weekly':
-        startDate = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'monthly':
-        startDate = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000);
-        break;
-    }
+  async getRevenueAnalytics(period: string) {
+    const startDate = this.parsePeriod(period);
 
     // Use raw query to avoid TypeScript issues
     const revenueData = await this.prisma.$queryRaw`
@@ -676,5 +648,17 @@ export class AdminService {
     ` as any[];
 
     return revenueData;
+  }
+
+  private parsePeriod(period: string): Date {
+    const now = new Date();
+    const match = period.match(/^(\d+)([dwmy])$/);
+    if (match) {
+      const value = parseInt(match[1], 10);
+      const unit = match[2];
+      const days = unit === 'd' ? value : unit === 'w' ? value * 7 : unit === 'm' ? value * 30 : value * 365;
+      return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    }
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   }
 }
