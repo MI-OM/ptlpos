@@ -17,7 +17,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:push": "prisma db push --accept-data-loss",
-    "prisma:seed": "node dist/prisma/seed.js"
+    "prisma:seed": "ts-node --transpile-only -P tsconfig.seed.json prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
