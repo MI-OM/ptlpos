@@ -5,7 +5,7 @@
   "description": "Multi-tenant POS and retail SaaS backend",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "tsc --build tsconfig.build.json",
+    "build": "tsc --build --force tsconfig.build.json",
     "start": "node dist/main",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
