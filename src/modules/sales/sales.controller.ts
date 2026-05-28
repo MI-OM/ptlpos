@@ -23,7 +23,7 @@ export class SalesController {
     schema: {
       example: {
         id: 'sale-123',
-        status: 'ACTIVE',
+          status: 'OPEN',
         totalAmount: 99.99,
         subtotal: 89.99,
         tax: 10.00,
@@ -261,7 +261,7 @@ export class SalesController {
     schema: {
       example: {
         id: 'sale-123',
-        status: 'ACTIVE',
+          status: 'OPEN',
         totalAmount: 99.99,
       },
     },

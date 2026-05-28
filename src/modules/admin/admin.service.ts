@@ -373,6 +373,44 @@ export class AdminService {
     return updatedSubscription;
   }
 
+  async cancelSubscription(id: string) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: { plan: true },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    if (subscription.status === SubscriptionStatus.CANCELLED) {
+      throw new BadRequestException('Subscription is already cancelled');
+    }
+
+    const updatedSubscription = await this.prisma.subscription.update({
+      where: { id },
+      data: {
+        status: SubscriptionStatus.CANCELLED,
+        cancelledAt: new Date(),
+        endDate: new Date(),
+      },
+    });
+
+    await this.audit.log({
+      tenantId: subscription.tenantId,
+      userId: null,
+      action: 'CANCEL_SUBSCRIPTION',
+      entity: 'Subscription',
+      entityId: id,
+      metadata: {
+        planId: subscription.planId,
+        planName: subscription.plan?.name,
+      },
+    });
+
+    return updatedSubscription;
+  }
+
   // SUPPORT SYSTEM
   async getTickets(params: {
     page: number;

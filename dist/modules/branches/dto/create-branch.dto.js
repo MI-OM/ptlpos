@@ -1,0 +1,141 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateBranchDto = exports.CreateBranchDto = void 0;
+const class_validator_1 = require("class-validator");
+const swagger_1 = require("@nestjs/swagger");
+class CreateBranchDto {
+    name;
+    address;
+    city;
+    state;
+    zipCode;
+    country;
+}
+exports.CreateBranchDto = CreateBranchDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Branch name',
+        example: 'Main Store',
+        required: true,
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBranchDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Street address',
+        example: '123 Main Street',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBranchDto.prototype, "address", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'City name',
+        example: 'New York',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBranchDto.prototype, "city", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'State or province',
+        example: 'NY',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBranchDto.prototype, "state", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'ZIP or postal code',
+        example: '10001',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBranchDto.prototype, "zipCode", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Country name',
+        example: 'USA',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBranchDto.prototype, "country", void 0);
+class UpdateBranchDto {
+    name;
+    address;
+    city;
+    state;
+    zipCode;
+    country;
+}
+exports.UpdateBranchDto = UpdateBranchDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Branch name',
+        example: 'Updated Store Name',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBranchDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Street address',
+        example: '456 Updated Street',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBranchDto.prototype, "address", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'City name',
+        example: 'Boston',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBranchDto.prototype, "city", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'State or province',
+        example: 'MA',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBranchDto.prototype, "state", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'ZIP or postal code',
+        example: '02101',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBranchDto.prototype, "zipCode", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Country name',
+        example: 'USA',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBranchDto.prototype, "country", void 0);
+//# sourceMappingURL=create-branch.dto.js.map

@@ -150,7 +150,7 @@ export class UsersService {
         },
       });
       const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+        this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
       const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
       await this.emailService.sendVerificationEmail(email, dto.name, verificationUrl);
     } catch (err) {

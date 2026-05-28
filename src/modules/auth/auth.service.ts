@@ -131,6 +131,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Email not verified. Please check your inbox.');
+    }
+
     // Update last login timestamp
     await this.prisma.user.update({
       where: { id: user.id },
@@ -187,6 +191,10 @@ export class AuthService {
 
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Email not verified. Please check your inbox.');
     }
 
     // Security check: Verify email domain matches tenant domain (if configured)
@@ -434,7 +442,7 @@ export class AuthService {
 
     // Send verification email
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
     const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
     await this.emailService.sendVerificationEmail(email, email, verificationUrl);
 
@@ -576,7 +584,7 @@ export class AuthService {
 
     // Send password reset email
     const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     await this.emailService.sendPasswordResetEmail(email, user.name, token, resetUrl);
 

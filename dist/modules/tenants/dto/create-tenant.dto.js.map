@@ -1,0 +1,1 @@
+{"version":3,"file":"create-tenant.dto.js","sourceRoot":"","sources":["../../../../src/modules/tenants/dto/create-tenant.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAA2C;AAC3C,6CAA8C;AAE9C,MAAa,eAAe;IAM1B,IAAI,CAAU;CACf;AAPD,0CAOC;AADC;IALC,IAAA,qBAAW,EAAC;QACX,WAAW,EAAE,+BAA+B;QAC5C,OAAO,EAAE,kBAAkB;KAC5B,CAAC;IACD,IAAA,0BAAQ,GAAE;;6CACG"}

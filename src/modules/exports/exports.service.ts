@@ -83,6 +83,55 @@ export class ExportsService {
   }
 
   /**
+   * Export sales data for tenant
+   */
+  async exportSales(context: AuthContext, from?: string, to?: string, branchId?: string) {
+    const where: any = { tenantId: context.tenantId };
+
+    if (branchId) {
+      where.branchId = branchId;
+    }
+
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from);
+      if (to) where.createdAt.lte = new Date(to);
+    }
+
+    const sales = await this.prisma.sale.findMany({
+      where,
+      include: {
+        items: {
+          include: {
+            product: {
+              select: { name: true, sku: true },
+            },
+          },
+        },
+        payments: true,
+        customer: {
+          select: { name: true, email: true },
+        },
+        shift: {
+          include: {
+            user: {
+              select: { name: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      success: true,
+      count: sales.length,
+      data: sales,
+      exportedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Export inventory snapshot for tenant
    */
   async exportInventory(context: AuthContext, branchId?: string) {

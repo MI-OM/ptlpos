@@ -44,4 +44,20 @@ export class ExportsController {
   exportInventory(@CurrentUser() context: AuthContext, @Query('branchId') branchId?: string) {
     return this.exportsService.exportInventory(context, branchId);
   }
+
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @ApiOperation({ summary: 'Export sales data' })
+  @ApiQuery({ name: 'from', required: false, type: String, description: 'Start date (ISO)' })
+  @ApiQuery({ name: 'to', required: false, type: String, description: 'End date (ISO)' })
+  @ApiQuery({ name: 'branchId', required: false, type: String, description: 'Filter by branch ID' })
+  @ApiResponse({ status: 200, description: 'Sales export data' })
+  @Get('sales')
+  exportSales(
+    @CurrentUser() context: AuthContext,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.exportsService.exportSales(context, from, to, branchId);
+  }
 }

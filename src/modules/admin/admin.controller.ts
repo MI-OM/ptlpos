@@ -157,6 +157,14 @@ export class AdminController {
     return this.adminService.changeSubscription(id, changeSubscriptionDto);
   }
 
+  @Post('subscriptions/:id/cancel')
+  @Roles('SUPER_ADMIN', 'BILLING_ADMIN')
+  @ApiOperation({ summary: 'Cancel tenant subscription' })
+  @ApiResponse({ status: 200, description: 'Subscription cancelled' })
+  async cancelSubscription(@Param('id') id: string) {
+    return this.adminService.cancelSubscription(id);
+  }
+
   @Get('tickets')
   @Roles('SUPER_ADMIN', 'SUPPORT_ADMIN')
   @ApiOperation({ summary: 'Get support tickets' })

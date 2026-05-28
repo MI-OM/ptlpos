@@ -1,0 +1,1 @@
+{"version":3,"file":"create-invoice.dto.js","sourceRoot":"","sources":["../../../../src/modules/invoices/dto/create-invoice.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAAuD;AAEvD,MAAa,gBAAgB;IAE3B,MAAM,CAAU;IAIhB,IAAI,CAAU;CACf;AAPD,4CAOC;AALC;IADC,IAAA,0BAAQ,GAAE;;gDACK;AAIhB;IAFC,IAAA,4BAAU,GAAE;IACZ,IAAA,0BAAQ,GAAE;;8CACG"}

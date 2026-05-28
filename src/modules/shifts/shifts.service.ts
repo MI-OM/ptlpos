@@ -93,6 +93,7 @@ export class ShiftsService {
 
     let cashSales = new Prisma.Decimal(0);
     let cardSales = new Prisma.Decimal(0);
+    let transferSales = new Prisma.Decimal(0);
     let otherSales = new Prisma.Decimal(0);
 
     for (const sale of shift.sales) {
@@ -102,6 +103,8 @@ export class ShiftsService {
             cashSales = cashSales.add(payment.amount);
           } else if (payment.method === 'CARD') {
             cardSales = cardSales.add(payment.amount);
+          } else if (payment.method === 'TRANSFER') {
+            transferSales = transferSales.add(payment.amount);
           } else {
             otherSales = otherSales.add(payment.amount);
           }
@@ -152,8 +155,9 @@ export class ShiftsService {
       drawerType: updatedShift.drawerType,
       cashSales: updatedShift.cashSales,
       cardSales: updatedShift.cardSales,
+      transferSales: transferSales,
       otherSales: updatedShift.otherSales,
-      totalSales: updatedShift.cashSales.add(updatedShift.cardSales).add(updatedShift.otherSales),
+      totalSales: updatedShift.cashSales.add(updatedShift.cardSales).add(transferSales).add(updatedShift.otherSales),
       discrepancy: updatedShift.discrepancy,
       status: updatedShift.status,
       notes: updatedShift.notes,
@@ -196,6 +200,7 @@ export class ShiftsService {
 
     let cashSales = new Prisma.Decimal(0);
     let cardSales = new Prisma.Decimal(0);
+    let transferSales = new Prisma.Decimal(0);
     let otherSales = new Prisma.Decimal(0);
 
     for (const sale of shift.sales) {
@@ -205,6 +210,8 @@ export class ShiftsService {
             cashSales = cashSales.add(payment.amount);
           } else if (payment.method === 'CARD') {
             cardSales = cardSales.add(payment.amount);
+          } else if (payment.method === 'TRANSFER') {
+            transferSales = transferSales.add(payment.amount);
           } else {
             otherSales = otherSales.add(payment.amount);
           }
@@ -220,8 +227,9 @@ export class ShiftsService {
       openingBalance: shift.openingBalance,
       cashSales,
       cardSales,
+      transferSales,
       otherSales,
-      totalSales: cashSales.add(cardSales).add(otherSales),
+      totalSales: cashSales.add(cardSales).add(transferSales).add(otherSales),
       status: shift.status,
       notes: shift.notes,
       salesCount: shift.sales.length,
@@ -233,12 +241,33 @@ export class ShiftsService {
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
+    const where: Prisma.ShiftWhereInput = {
+      tenantId: context.tenantId,
+    };
+
+    if (query.status) {
+      where.status = query.status as ShiftStatus;
+    }
+
+    if (query.branchId) {
+      where.branchId = query.branchId;
+    } else if (context.branchId) {
+      where.branchId = context.branchId;
+    }
+
+    if (query.fromDate || query.toDate) {
+      where.openedAt = {};
+      if (query.fromDate) {
+        (where.openedAt as any).gte = new Date(query.fromDate);
+      }
+      if (query.toDate) {
+        (where.openedAt as any).lte = new Date(query.toDate);
+      }
+    }
+
     const [shifts, total] = await Promise.all([
       this.prisma.shift.findMany({
-        where: {
-          tenantId: context.tenantId,
-          ...(context.branchId ? { branchId: context.branchId } : {}),
-        },
+        where,
         skip,
         take: limit,
         orderBy: { openedAt: 'desc' },
@@ -256,12 +285,7 @@ export class ShiftsService {
           },
         },
       }),
-      this.prisma.shift.count({
-        where: {
-          tenantId: context.tenantId,
-          ...(context.branchId ? { branchId: context.branchId } : {}),
-        },
-      }),
+      this.prisma.shift.count({ where }),
     ]);
 
     return {

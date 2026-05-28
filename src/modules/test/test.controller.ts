@@ -65,7 +65,7 @@ export class TestController {
     const { email, name = 'Test User' } = body;
 
     try {
-      const success = await this.emailService.sendWelcomeEmail(email, name, 'http://localhost:3000/login');
+      const success = await this.emailService.sendWelcomeEmail(email, name, 'http://localhost:3001/login');
       
       return {
         success,
@@ -111,7 +111,7 @@ export class TestController {
   async testPasswordResetEmail(@Body() body: { email: string; name?: string }) {
     const { email, name = 'Test User' } = body;
     const resetToken = 'test-reset-token-' + Date.now();
-    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+    const resetUrl = `http://localhost:3001/reset-password?token=${resetToken}`;
 
     try {
       const success = await this.emailService.sendPasswordResetEmail(email, name, resetToken, resetUrl);
@@ -308,7 +308,7 @@ export class TestController {
 
     // Test welcome email
     try {
-      const success = await this.emailService.sendWelcomeEmail(email, name, 'http://localhost:3000/login');
+      const success = await this.emailService.sendWelcomeEmail(email, name, 'http://localhost:3001/login');
       results.email.welcome.success = success;
       results.email.welcome.message = success ? 'Welcome email sent' : 'Failed to send welcome email';
     } catch (error) {
@@ -318,7 +318,7 @@ export class TestController {
     // Test password reset email
     try {
       const resetToken = 'test-token-' + Date.now();
-      const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+      const resetUrl = `http://localhost:3001/reset-password?token=${resetToken}`;
       const success = await this.emailService.sendPasswordResetEmail(email, name, resetToken, resetUrl);
       results.email.passwordReset.success = success;
       results.email.passwordReset.message = success ? 'Password reset email sent' : 'Failed to send password reset email';

@@ -63,4 +63,36 @@ export class QueryShiftsDto {
   })
   @IsOptional()
   limit?: number = 20;
+
+  @ApiPropertyOptional({
+    description: 'Filter by status (OPEN or CLOSED)',
+    example: 'OPEN',
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by branch ID',
+    example: 'branch-123',
+  })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter shifts from this date (ISO)',
+    example: '2026-01-01',
+  })
+  @IsOptional()
+  @IsString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter shifts to this date (ISO)',
+    example: '2026-12-31',
+  })
+  @IsOptional()
+  @IsString()
+  toDate?: string;
 }
