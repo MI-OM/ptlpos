@@ -20,6 +20,7 @@ export declare class AnalyticsController {
             productId: string;
             name: any;
             quantitySold: number | import("@prisma/client/runtime/library").Decimal;
+            revenue: number;
         }[];
         topCustomers: {
             customerId: string;

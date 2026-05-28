@@ -51,6 +51,7 @@ let AnalyticsService = class AnalyticsService {
                 },
                 _sum: {
                     quantity: true,
+                    lineTotal: true,
                 },
                 orderBy: {
                     _sum: {
@@ -177,6 +178,7 @@ let AnalyticsService = class AnalyticsService {
                 productId: entry.productId,
                 name: productMap.get(entry.productId) ?? 'Unknown',
                 quantitySold: entry._sum.quantity ?? 0,
+                revenue: Number(entry._sum.lineTotal ?? 0),
             })),
             topCustomers: topCustomers.map(entry => ({
                 customerId: entry.customerId,
