@@ -162,15 +162,15 @@ export class CreateSaleDto {
 }
 
 export class CompleteSaleDto {
-  @ApiProperty({
-    description: 'Payment information to complete the sale',
+  @ApiPropertyOptional({
+    description: 'Payment information to complete the sale (optional if payments already added)',
     type: [SalePaymentDto],
-    required: true,
   })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SalePaymentDto)
-  payments!: SalePaymentDto[];
+  payments?: SalePaymentDto[];
 }
 
 export class RefundSaleItemDto {

@@ -21,7 +21,7 @@ export declare class CreateSaleDto {
     payments?: SalePaymentDto[];
 }
 export declare class CompleteSaleDto {
-    payments: SalePaymentDto[];
+    payments?: SalePaymentDto[];
 }
 export declare class RefundSaleItemDto {
     saleItemId: string;

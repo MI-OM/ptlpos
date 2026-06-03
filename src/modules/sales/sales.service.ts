@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -343,8 +342,8 @@ export class SalesService {
     const total = Number(sale.totalAmount);
     const paymentAmount = Number(dto.amount);
 
-    if (currentPaid + paymentAmount > total) {
-      throw new BadRequestException('Payment amount exceeds sale total');
+    if (paymentAmount <= 0) {
+      throw new BadRequestException('Payment amount must be positive');
     }
 
     const payment = await this.prisma.payment.create({
@@ -457,7 +456,6 @@ export class SalesService {
       }
 
       for (const item of sale.items) {
-        // Get product to check if it's composite
         const product = await tx.product.findUnique({
           where: { id: item.productId },
           include: {
@@ -484,8 +482,8 @@ export class SalesService {
             const nextQuantity = new Prisma.Decimal(componentInventory.quantity).sub(totalToDeduct);
 
             if (nextQuantity.lessThan(0)) {
-              throw new ConflictException(
-                `Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}`
+              console.warn(
+                `Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}. Proceeding with negative inventory.`
               );
             }
 
@@ -521,7 +519,9 @@ export class SalesService {
           const nextQuantity = new Prisma.Decimal(inventory.quantity).sub(item.quantity);
 
           if (nextQuantity.lessThan(0)) {
-            throw new ConflictException(`Insufficient stock for product ${item.productId}`);
+            console.warn(
+              `Insufficient stock for product ${item.productId}. Need ${item.quantity}, have ${inventory.quantity}. Proceeding with negative inventory.`
+            );
           }
 
           await tx.inventory.update({
@@ -608,10 +608,6 @@ export class SalesService {
         },
       });
 
-      if (Number(totalPaid._sum.amount ?? 0) > Number(sale.totalAmount)) {
-        throw new BadRequestException('Payments cannot exceed the sale total');
-      }
-
       const updatedSale = await tx.sale.update({
         where: { id: sale.id },
         data: {
@@ -626,11 +622,9 @@ export class SalesService {
         },
       });
 
-      console.log(`[DEBUG] Sale ${id} status updated to: ${updatedSale.status}`);
       return updatedSale;
-    });
+    }, { timeout: 15000 });
 
-    console.log(`[DEBUG] Transaction committed. Final status: ${result.status}`);
     await this.audit.log({
       tenantId: context.tenantId,
       userId: context.userId,
@@ -1544,32 +1538,23 @@ export class SalesService {
     productId: string,
     productVariantId?: string | null
   ) {
-    const rows = productVariantId
-      ? await tx.$queryRaw<Array<{ id: string; quantity: Prisma.Decimal }>>(
-          Prisma.sql`
-            SELECT id, quantity
-            FROM "Inventory"
-            WHERE "tenantId" = ${tenantId}
-              AND "productId" = ${productId}
-              AND "productVariantId" = ${productVariantId}
-            FOR UPDATE
-          `
-        )
-      : await tx.$queryRaw<Array<{ id: string; quantity: Prisma.Decimal }>>(
-          Prisma.sql`
-            SELECT id, quantity
-            FROM "Inventory"
-            WHERE "tenantId" = ${tenantId}
-              AND "productId" = ${productId}
-              AND "productVariantId" IS NULL
-            FOR UPDATE
-          `
-        );
-
-    const inventory = rows[0];
+    const inventory = await tx.inventory.findFirst({
+      where: {
+        tenantId,
+        productId,
+        productVariantId: productVariantId ?? null,
+      },
+    });
 
     if (!inventory) {
-      throw new NotFoundException(`Inventory row missing for product ${productId}`);
+      return await tx.inventory.create({
+        data: {
+          tenantId,
+          productId,
+          productVariantId: productVariantId ?? null,
+          quantity: 0,
+        },
+      });
     }
 
     return inventory;

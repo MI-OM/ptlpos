@@ -954,13 +954,13 @@ export declare class SalesService {
         };
         tenant: {
             name: string;
+            phone: string;
             email: string;
             address: string;
             city: string;
             state: string;
             zipCode: string;
             country: string;
-            phone: string;
             settings: Prisma.JsonValue;
         } | {
             name: string;

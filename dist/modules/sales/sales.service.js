@@ -280,8 +280,8 @@ let SalesService = class SalesService {
         const currentPaid = Number(sale.paidAmount || 0);
         const total = Number(sale.totalAmount);
         const paymentAmount = Number(dto.amount);
-        if (currentPaid + paymentAmount > total) {
-            throw new common_1.BadRequestException('Payment amount exceeds sale total');
+        if (paymentAmount <= 0) {
+            throw new common_1.BadRequestException('Payment amount must be positive');
         }
         const payment = await this.prisma.payment.create({
             data: {
@@ -391,7 +391,7 @@ let SalesService = class SalesService {
                         const totalToDeduct = new client_1.Prisma.Decimal(component.quantity).mul(item.quantity);
                         const nextQuantity = new client_1.Prisma.Decimal(componentInventory.quantity).sub(totalToDeduct);
                         if (nextQuantity.lessThan(0)) {
-                            throw new common_1.ConflictException(`Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}`);
+                            console.warn(`Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}. Proceeding with negative inventory.`);
                         }
                         await tx.inventory.update({
                             where: { id: componentInventory.id },
@@ -417,7 +417,7 @@ let SalesService = class SalesService {
                     const inventory = await this.lockInventoryRow(tx, context.tenantId, item.productId, item.productVariantId);
                     const nextQuantity = new client_1.Prisma.Decimal(inventory.quantity).sub(item.quantity);
                     if (nextQuantity.lessThan(0)) {
-                        throw new common_1.ConflictException(`Insufficient stock for product ${item.productId}`);
+                        console.warn(`Insufficient stock for product ${item.productId}. Need ${item.quantity}, have ${inventory.quantity}. Proceeding with negative inventory.`);
                     }
                     await tx.inventory.update({
                         where: { id: inventory.id },
@@ -491,9 +491,6 @@ let SalesService = class SalesService {
                     amount: true,
                 },
             });
-            if (Number(totalPaid._sum.amount ?? 0) > Number(sale.totalAmount)) {
-                throw new common_1.BadRequestException('Payments cannot exceed the sale total');
-            }
             const updatedSale = await tx.sale.update({
                 where: { id: sale.id },
                 data: {
@@ -507,10 +504,8 @@ let SalesService = class SalesService {
                     customer: true,
                 },
             });
-            console.log(`[DEBUG] Sale ${id} status updated to: ${updatedSale.status}`);
             return updatedSale;
-        });
-        console.log(`[DEBUG] Transaction committed. Final status: ${result.status}`);
+        }, { timeout: 15000 });
         await this.audit.log({
             tenantId: context.tenantId,
             userId: context.userId,
@@ -1253,26 +1248,22 @@ let SalesService = class SalesService {
         return `SAL-${datePart}-${String(count + 1).padStart(4, '0')}`;
     }
     async lockInventoryRow(tx, tenantId, productId, productVariantId) {
-        const rows = productVariantId
-            ? await tx.$queryRaw(client_1.Prisma.sql `
-            SELECT id, quantity
-            FROM "Inventory"
-            WHERE "tenantId" = ${tenantId}
-              AND "productId" = ${productId}
-              AND "productVariantId" = ${productVariantId}
-            FOR UPDATE
-          `)
-            : await tx.$queryRaw(client_1.Prisma.sql `
-            SELECT id, quantity
-            FROM "Inventory"
-            WHERE "tenantId" = ${tenantId}
-              AND "productId" = ${productId}
-              AND "productVariantId" IS NULL
-            FOR UPDATE
-          `);
-        const inventory = rows[0];
+        const inventory = await tx.inventory.findFirst({
+            where: {
+                tenantId,
+                productId,
+                productVariantId: productVariantId ?? null,
+            },
+        });
         if (!inventory) {
-            throw new common_1.NotFoundException(`Inventory row missing for product ${productId}`);
+            return await tx.inventory.create({
+                data: {
+                    tenantId,
+                    productId,
+                    productVariantId: productVariantId ?? null,
+                    quantity: 0,
+                },
+            });
         }
         return inventory;
     }

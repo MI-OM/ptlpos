@@ -195,9 +195,7 @@ let AnalyticsService = class AnalyticsService {
         if (!query?.from) {
             start.setHours(0, 0, 0, 0);
         }
-        if (!query?.to) {
-            end.setHours(23, 59, 59, 999);
-        }
+        end.setHours(23, 59, 59, 999);
         return { start, end };
     }
     buildHourlyBreakdown(sales, start, end) {

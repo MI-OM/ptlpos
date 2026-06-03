@@ -7,19 +7,6 @@ export declare class SalesController {
     private readonly salesService;
     constructor(salesService: SalesService);
     create(user: AuthContext, dto: CreateSaleDto): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -42,6 +29,19 @@ export declare class SalesController {
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
+        }[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
@@ -67,19 +67,6 @@ export declare class SalesController {
     }>;
     findAll(user: AuthContext, query: QuerySalesDto): Promise<{
         data: ({
-            payments: {
-                id: string;
-                tenantId: string;
-                saleId: string;
-                method: import(".prisma/client").$Enums.PaymentMethod;
-                direction: import(".prisma/client").$Enums.PaymentDirection;
-                status: import(".prisma/client").$Enums.PaymentStatus;
-                amount: import("@prisma/client/runtime/library").Decimal;
-                reference: string | null;
-                externalRef: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-            }[];
             customer: {
                 id: string;
                 tenantId: string;
@@ -119,6 +106,19 @@ export declare class SalesController {
                 lineTotal: import("@prisma/client/runtime/library").Decimal;
                 createdAt: Date;
             })[];
+            payments: {
+                id: string;
+                tenantId: string;
+                saleId: string;
+                method: import(".prisma/client").$Enums.PaymentMethod;
+                direction: import(".prisma/client").$Enums.PaymentDirection;
+                status: import(".prisma/client").$Enums.PaymentStatus;
+                amount: import("@prisma/client/runtime/library").Decimal;
+                reference: string | null;
+                externalRef: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+            }[];
         } & {
             id: string;
             tenantId: string;
@@ -151,19 +151,6 @@ export declare class SalesController {
     getReceiptSettings(user: AuthContext): Promise<any>;
     updateReceiptSettings(user: AuthContext, dto: ReceiptSettingsDto): Promise<any>;
     findOne(user: AuthContext, id: string): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -213,6 +200,19 @@ export declare class SalesController {
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
         })[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
     } & {
         id: string;
         tenantId: string;
@@ -236,19 +236,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     addItem(user: AuthContext, id: string, dto: AddSaleItemDto): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -298,6 +285,19 @@ export declare class SalesController {
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
         })[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
     } & {
         id: string;
         tenantId: string;
@@ -321,19 +321,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     removeItem(user: AuthContext, id: string, saleItemId: string): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -383,6 +370,19 @@ export declare class SalesController {
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
         })[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
     } & {
         id: string;
         tenantId: string;
@@ -406,19 +406,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     updateItem(user: AuthContext, id: string, itemId: string, dto: UpdateSaleItemDto): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -468,6 +455,19 @@ export declare class SalesController {
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
         })[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
     } & {
         id: string;
         tenantId: string;
@@ -491,19 +491,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     addPayment(user: AuthContext, id: string, dto: SalePaymentDto): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -553,6 +540,19 @@ export declare class SalesController {
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
         })[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
     } & {
         id: string;
         tenantId: string;
@@ -576,19 +576,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     hold(user: AuthContext, id: string): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -611,6 +598,19 @@ export declare class SalesController {
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
+        }[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
@@ -635,19 +635,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     resume(user: AuthContext, id: string): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -670,6 +657,19 @@ export declare class SalesController {
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
+        }[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
@@ -694,19 +694,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     complete(user: AuthContext, id: string, dto: CompleteSaleDto): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -729,6 +716,19 @@ export declare class SalesController {
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
+        }[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
@@ -753,19 +753,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     cancel(user: AuthContext, id: string): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -788,6 +775,19 @@ export declare class SalesController {
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
+        }[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
@@ -812,19 +812,6 @@ export declare class SalesController {
         refundedAt: Date | null;
     }>;
     refund(user: AuthContext, id: string, dto: RefundSaleDto): Promise<{
-        payments: {
-            id: string;
-            tenantId: string;
-            saleId: string;
-            method: import(".prisma/client").$Enums.PaymentMethod;
-            direction: import(".prisma/client").$Enums.PaymentDirection;
-            status: import(".prisma/client").$Enums.PaymentStatus;
-            amount: import("@prisma/client/runtime/library").Decimal;
-            reference: string | null;
-            externalRef: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        }[];
         customer: {
             id: string;
             tenantId: string;
@@ -847,6 +834,19 @@ export declare class SalesController {
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             lineTotal: import("@prisma/client/runtime/library").Decimal;
             createdAt: Date;
+        }[];
+        payments: {
+            id: string;
+            tenantId: string;
+            saleId: string;
+            method: import(".prisma/client").$Enums.PaymentMethod;
+            direction: import(".prisma/client").$Enums.PaymentDirection;
+            status: import(".prisma/client").$Enums.PaymentStatus;
+            amount: import("@prisma/client/runtime/library").Decimal;
+            reference: string | null;
+            externalRef: string | null;
+            createdAt: Date;
+            updatedAt: Date;
         }[];
     } & {
         id: string;
@@ -872,19 +872,6 @@ export declare class SalesController {
     }>;
     returnExchange(user: AuthContext, id: string, dto: ReturnExchangeDto): Promise<{
         originalSale: {
-            payments: {
-                id: string;
-                tenantId: string;
-                saleId: string;
-                method: import(".prisma/client").$Enums.PaymentMethod;
-                direction: import(".prisma/client").$Enums.PaymentDirection;
-                status: import(".prisma/client").$Enums.PaymentStatus;
-                amount: import("@prisma/client/runtime/library").Decimal;
-                reference: string | null;
-                externalRef: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-            }[];
             customer: {
                 id: string;
                 tenantId: string;
@@ -907,6 +894,19 @@ export declare class SalesController {
                 taxAmount: import("@prisma/client/runtime/library").Decimal;
                 lineTotal: import("@prisma/client/runtime/library").Decimal;
                 createdAt: Date;
+            }[];
+            payments: {
+                id: string;
+                tenantId: string;
+                saleId: string;
+                method: import(".prisma/client").$Enums.PaymentMethod;
+                direction: import(".prisma/client").$Enums.PaymentDirection;
+                status: import(".prisma/client").$Enums.PaymentStatus;
+                amount: import("@prisma/client/runtime/library").Decimal;
+                reference: string | null;
+                externalRef: string | null;
+                createdAt: Date;
+                updatedAt: Date;
             }[];
         } & {
             id: string;
@@ -954,8 +954,8 @@ export declare class SalesController {
         };
         tenant: {
             name: string;
-            email: string;
             phone: string;
+            email: string;
             address: string;
             city: string;
             state: string;

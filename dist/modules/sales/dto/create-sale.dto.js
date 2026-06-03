@@ -199,11 +199,11 @@ class CompleteSaleDto {
 }
 exports.CompleteSaleDto = CompleteSaleDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({
-        description: 'Payment information to complete the sale',
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Payment information to complete the sale (optional if payments already added)',
         type: [SalePaymentDto],
-        required: true,
     }),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => SalePaymentDto),
