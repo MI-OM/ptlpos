@@ -20,8 +20,8 @@ export declare class BranchesService {
     }[]>;
     findOne(tenantId: string, id: string): Promise<{
         _count: {
-            sales: number;
             inventories: number;
+            sales: number;
             purchaseOrders: number;
         };
     } & {

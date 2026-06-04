@@ -9,10 +9,6 @@ export declare class AdminController {
     constructor(adminService: AdminService);
     getTenants(page?: number, limit?: number, status?: string, search?: string): Promise<{
         data: ({
-            _count: {
-                users: number;
-                branches: number;
-            };
             subscription: {
                 plan: {
                     id: string;
@@ -37,6 +33,10 @@ export declare class AdminController {
                 usage: import("@prisma/client/runtime/library").JsonValue;
                 createdAt: Date;
                 updatedAt: Date;
+            };
+            _count: {
+                users: number;
+                branches: number;
             };
         } & {
             id: string;
@@ -67,26 +67,6 @@ export declare class AdminController {
         };
     }>;
     getTenant(id: string): Promise<{
-        supportTickets: {
-            id: string;
-            status: import(".prisma/client").$Enums.TicketStatus;
-            createdAt: Date;
-            subject: string;
-            priority: import(".prisma/client").$Enums.TicketPriority;
-        }[];
-        users: {
-            role: {
-                id: string;
-                name: import(".prisma/client").$Enums.RoleName;
-                createdAt: Date;
-            };
-            name: string;
-            id: string;
-            email: string;
-            status: import(".prisma/client").$Enums.UserStatus;
-            lastLoginAt: Date;
-            createdAt: Date;
-        }[];
         subscription: {
             plan: {
                 id: string;
@@ -112,9 +92,29 @@ export declare class AdminController {
             createdAt: Date;
             updatedAt: Date;
         };
-        branches: {
-            name: string;
+        supportTickets: {
             id: string;
+            status: import(".prisma/client").$Enums.TicketStatus;
+            createdAt: Date;
+            subject: string;
+            priority: import(".prisma/client").$Enums.TicketPriority;
+        }[];
+        users: {
+            role: {
+                id: string;
+                name: import(".prisma/client").$Enums.RoleName;
+                createdAt: Date;
+            };
+            id: string;
+            name: string;
+            email: string;
+            status: import(".prisma/client").$Enums.UserStatus;
+            lastLoginAt: Date;
+            createdAt: Date;
+        }[];
+        branches: {
+            id: string;
+            name: string;
             createdAt: Date;
             address: string;
         }[];
@@ -240,8 +240,8 @@ export declare class AdminController {
     getSubscriptions(page?: number, limit?: number, status?: string): Promise<{
         data: ({
             tenant: {
-                name: string;
                 id: string;
+                name: string;
                 email: string;
                 status: import(".prisma/client").$Enums.TenantStatus;
             };
@@ -278,8 +278,8 @@ export declare class AdminController {
     }>;
     getSubscription(id: string): Promise<{
         tenant: {
-            name: string;
             id: string;
+            name: string;
             email: string;
             status: import(".prisma/client").$Enums.TenantStatus;
         };
@@ -334,17 +334,17 @@ export declare class AdminController {
     getTickets(page?: number, limit?: number, status?: string, assignedTo?: string): Promise<{
         data: ({
             tenant: {
-                name: string;
                 id: string;
+                name: string;
             };
             user: {
-                name: string;
                 id: string;
+                name: string;
                 email: string;
             };
             assignee: {
-                name: string;
                 id: string;
+                name: string;
                 email: string;
             };
             messages: {
@@ -378,24 +378,24 @@ export declare class AdminController {
     }>;
     getTicket(id: string): Promise<{
         tenant: {
-            name: string;
             id: string;
+            name: string;
             email: string;
         };
         user: {
-            name: string;
             id: string;
+            name: string;
             email: string;
         };
         assignee: {
-            name: string;
             id: string;
+            name: string;
             email: string;
         };
         messages: ({
             sender: {
-                name: string;
                 id: string;
+                name: string;
                 email: string;
             };
         } & {
@@ -422,12 +422,12 @@ export declare class AdminController {
     }>;
     createTicket(createTicketDto: CreateSupportTicketDto): Promise<{
         tenant: {
-            name: string;
             id: string;
+            name: string;
         };
         user: {
-            name: string;
             id: string;
+            name: string;
             email: string;
         };
     } & {

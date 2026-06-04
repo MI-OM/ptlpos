@@ -954,8 +954,8 @@ export declare class SalesController {
         };
         tenant: {
             name: string;
-            phone: string;
             email: string;
+            phone: string;
             address: string;
             city: string;
             state: string;

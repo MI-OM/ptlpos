@@ -36,7 +36,7 @@ export declare class PaymentsService {
             refundCount: number;
         };
         methods: {
-            method: "CASH" | "TRANSFER" | "CARD" | "STORE_CREDIT";
+            method: "TRANSFER" | "CASH" | "CARD" | "STORE_CREDIT";
             salesAmount: number;
             refundAmount: number;
             netAmount: number;
@@ -69,16 +69,16 @@ export declare class PaymentsService {
     }>;
     findByStatus(tenantId: string, status: PaymentStatus, limit?: number): Promise<({
         sale: {
-            totalAmount: Prisma.Decimal;
-            id: string;
-            status: import(".prisma/client").$Enums.SaleStatus;
-            saleNumber: string;
             customer: {
                 id: string;
                 name: string;
                 email: string;
                 phone: string;
             };
+            id: string;
+            status: import(".prisma/client").$Enums.SaleStatus;
+            saleNumber: string;
+            totalAmount: Prisma.Decimal;
         };
     } & {
         id: string;

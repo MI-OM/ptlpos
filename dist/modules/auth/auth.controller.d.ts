@@ -66,12 +66,12 @@ export declare class AuthController {
         };
     }>;
     me(user: AuthContext): Promise<{
-        tenantId: string;
         role: {
             name: import(".prisma/client").$Enums.RoleName;
         };
-        name: string;
+        tenantId: string;
         id: string;
+        name: string;
         email: string;
     }>;
     requestEmailVerification(dto: RequestEmailVerificationDto, user?: AuthContext): Promise<{

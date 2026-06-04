@@ -58,12 +58,12 @@ export declare class AuthService {
         };
     }>;
     me(context: AuthContext): Promise<{
-        tenantId: string;
         role: {
             name: import(".prisma/client").$Enums.RoleName;
         };
-        name: string;
+        tenantId: string;
         id: string;
+        name: string;
         email: string;
     }>;
     refresh(refreshToken: string): Promise<{

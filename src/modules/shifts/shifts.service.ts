@@ -33,7 +33,7 @@ export class ShiftsService {
     const shift = await this.prisma.shift.create({
       data: {
         tenantId: context.tenantId,
-        branchId: context.branchId,
+        branchId: dto.branchId || context.branchId,
         userId: context.userId,
         openingBalance: new Prisma.Decimal(dto.openingBalance),
         drawerType: dto.drawerType || DrawerType.OFFLINE,

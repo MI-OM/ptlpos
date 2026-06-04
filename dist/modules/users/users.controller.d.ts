@@ -6,15 +6,15 @@ export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
     findAll(user: AuthContext): import(".prisma/client").Prisma.PrismaPromise<{
-        tenantId: string;
-        role: {
-            name: import(".prisma/client").$Enums.RoleName;
-        };
-        name: string;
-        id: string;
         tenant: {
             name: string;
         };
+        role: {
+            name: import(".prisma/client").$Enums.RoleName;
+        };
+        tenantId: string;
+        id: string;
+        name: string;
         email: string;
         isEmailVerified: boolean;
         status: import(".prisma/client").$Enums.UserStatus;
@@ -23,15 +23,15 @@ export declare class UsersController {
         updatedAt: Date;
     }[]>;
     findOne(user: AuthContext, id: string): Promise<{
-        tenantId: string;
-        role: {
-            name: import(".prisma/client").$Enums.RoleName;
-        };
-        name: string;
-        id: string;
         tenant: {
             name: string;
         };
+        role: {
+            name: import(".prisma/client").$Enums.RoleName;
+        };
+        tenantId: string;
+        id: string;
+        name: string;
         email: string;
         isEmailVerified: boolean;
         status: import(".prisma/client").$Enums.UserStatus;

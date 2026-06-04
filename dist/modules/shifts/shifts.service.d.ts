@@ -68,12 +68,12 @@ export declare class ShiftsService {
     }>;
     findAll(context: AuthContext, query: QueryShiftsDto): Promise<{
         data: ({
+            branch: {
+                name: string;
+            };
             user: {
                 name: string;
                 email: string;
-            };
-            branch: {
-                name: string;
             };
         } & {
             id: string;
@@ -105,6 +105,9 @@ export declare class ShiftsService {
         };
     }>;
     findOne(context: AuthContext, shiftId: string): Promise<{
+        branch: {
+            name: string;
+        };
         user: {
             name: string;
             email: string;
@@ -145,9 +148,6 @@ export declare class ShiftsService {
             cancelledAt: Date | null;
             refundedAt: Date | null;
         })[];
-        branch: {
-            name: string;
-        };
     } & {
         id: string;
         tenantId: string;

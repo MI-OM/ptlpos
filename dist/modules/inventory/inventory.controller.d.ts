@@ -8,26 +8,26 @@ export declare class InventoryController {
     constructor(inventoryService: InventoryService);
     findAll(user: AuthContext): Promise<unknown>;
     lowStock(user: AuthContext, threshold?: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        tenantId: string;
-        branchId: string;
         product: {
+            type: import(".prisma/client").$Enums.ProductType;
             id: string;
             name: string;
-            price: import("@prisma/client/runtime/library").Decimal;
             sku: string;
-            type: import(".prisma/client").$Enums.ProductType;
+            price: import("@prisma/client/runtime/library").Decimal;
         };
-        productId: string;
-        productVariantId: string;
-        quantity: import("@prisma/client/runtime/library").Decimal;
         productVariant: {
             id: string;
             name: string;
             sku: string;
         };
+        tenantId: string;
+        branchId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        quantity: import("@prisma/client/runtime/library").Decimal;
+        productVariantId: string;
     }[]>;
     getAlerts(user: AuthContext, resolved?: string): Promise<({
         product: {

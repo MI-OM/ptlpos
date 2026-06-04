@@ -45,14 +45,14 @@ export declare class PaymentsController {
     }>;
     findByStatus(user: AuthContext, status: string, limit?: string): Promise<({
         sale: {
-            id: string;
-            status: import(".prisma/client").$Enums.SaleStatus;
             customer: {
-                name: string;
                 id: string;
+                name: string;
                 email: string;
                 phone: string;
             };
+            id: string;
+            status: import(".prisma/client").$Enums.SaleStatus;
             saleNumber: string;
             totalAmount: import("@prisma/client/runtime/library").Decimal;
         };

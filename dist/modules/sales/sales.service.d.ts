@@ -954,8 +954,8 @@ export declare class SalesService {
         };
         tenant: {
             name: string;
-            phone: string;
             email: string;
+            phone: string;
             address: string;
             city: string;
             state: string;

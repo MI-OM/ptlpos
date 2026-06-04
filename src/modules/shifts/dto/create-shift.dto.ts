@@ -1,5 +1,6 @@
-import { IsNumber, IsOptional, IsString, Min, IsEnum } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min, IsEnum, IsInt, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { DrawerType } from '@prisma/client';
 
 export class OpenShiftDto {
@@ -20,6 +21,14 @@ export class OpenShiftDto {
   @IsOptional()
   @IsEnum(DrawerType)
   drawerType?: DrawerType;
+
+  @ApiPropertyOptional({
+    description: 'Branch ID for this shift',
+    example: 'branch-123',
+  })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
 
   @ApiPropertyOptional({
     description: 'Notes about opening the shift',
@@ -55,6 +64,9 @@ export class QueryShiftsDto {
     example: 1,
   })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   page?: number = 1;
 
   @ApiPropertyOptional({
@@ -62,6 +74,10 @@ export class QueryShiftsDto {
     example: 20,
   })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number = 20;
 
   @ApiPropertyOptional({

@@ -8,6 +8,15 @@ export declare class PurchaseOrdersService {
     private readonly audit;
     constructor(prisma: PrismaService, audit: AuditService);
     findAll(tenantId: string, branchId?: string): Prisma.PrismaPromise<({
+        supplier: {
+            id: string;
+            tenantId: string;
+            name: string;
+            email: string | null;
+            phone: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         items: ({
             product: {
                 id: string;
@@ -31,15 +40,6 @@ export declare class PurchaseOrdersService {
             quantity: Prisma.Decimal;
             cost: Prisma.Decimal;
         })[];
-        supplier: {
-            id: string;
-            tenantId: string;
-            name: string;
-            email: string | null;
-            phone: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
     } & {
         id: string;
         tenantId: string;
@@ -50,6 +50,15 @@ export declare class PurchaseOrdersService {
         updatedAt: Date;
     })[]>;
     findOne(tenantId: string, id: string, branchId?: string): Promise<{
+        supplier: {
+            id: string;
+            tenantId: string;
+            name: string;
+            email: string | null;
+            phone: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         items: ({
             product: {
                 id: string;
@@ -73,15 +82,6 @@ export declare class PurchaseOrdersService {
             quantity: Prisma.Decimal;
             cost: Prisma.Decimal;
         })[];
-        supplier: {
-            id: string;
-            tenantId: string;
-            name: string;
-            email: string | null;
-            phone: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
     } & {
         id: string;
         tenantId: string;
@@ -92,6 +92,15 @@ export declare class PurchaseOrdersService {
         updatedAt: Date;
     }>;
     create(context: AuthContext, dto: CreatePurchaseOrderDto): Promise<{
+        supplier: {
+            id: string;
+            tenantId: string;
+            name: string;
+            email: string | null;
+            phone: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         items: ({
             product: {
                 id: string;
@@ -115,15 +124,6 @@ export declare class PurchaseOrdersService {
             quantity: Prisma.Decimal;
             cost: Prisma.Decimal;
         })[];
-        supplier: {
-            id: string;
-            tenantId: string;
-            name: string;
-            email: string | null;
-            phone: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
     } & {
         id: string;
         tenantId: string;

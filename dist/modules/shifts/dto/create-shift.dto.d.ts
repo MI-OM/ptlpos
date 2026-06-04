@@ -2,6 +2,7 @@ import { DrawerType } from '@prisma/client';
 export declare class OpenShiftDto {
     openingBalance: number;
     drawerType?: DrawerType;
+    branchId?: string;
     notes?: string;
 }
 export declare class CloseShiftDto {

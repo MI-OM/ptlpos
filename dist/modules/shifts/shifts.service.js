@@ -35,7 +35,7 @@ let ShiftsService = class ShiftsService {
         const shift = await this.prisma.shift.create({
             data: {
                 tenantId: context.tenantId,
-                branchId: context.branchId,
+                branchId: dto.branchId || context.branchId,
                 userId: context.userId,
                 openingBalance: new client_1.Prisma.Decimal(dto.openingBalance),
                 drawerType: dto.drawerType || client_1.DrawerType.OFFLINE,

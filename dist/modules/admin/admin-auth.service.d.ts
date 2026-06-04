@@ -8,13 +8,13 @@ export declare class AdminAuthService {
     constructor(prisma: PrismaService, jwtService: JwtService);
     register(registerDto: AdminRegisterDto): Promise<{
         adminUser: {
-            id: string;
-            createdAt: Date;
-            email: string;
             role: import(".prisma/client").$Enums.AdminRole;
+            id: string;
+            email: string;
+            createdAt: Date;
+            isActive: boolean;
             firstName: string;
             lastName: string;
-            isActive: boolean;
         };
         access_token: string;
         refresh_token: string;

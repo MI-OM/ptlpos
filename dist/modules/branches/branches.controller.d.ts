@@ -18,8 +18,8 @@ export declare class BranchesController {
     }[]>;
     findOne(user: AuthContext, id: string): Promise<{
         _count: {
-            sales: number;
             inventories: number;
+            sales: number;
             purchaseOrders: number;
         };
     } & {

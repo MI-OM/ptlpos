@@ -12,10 +12,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryShiftsDto = exports.CloseShiftDto = exports.OpenShiftDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
+const class_transformer_1 = require("class-transformer");
 const client_1 = require("@prisma/client");
 class OpenShiftDto {
     openingBalance;
     drawerType;
+    branchId;
     notes;
 }
 exports.OpenShiftDto = OpenShiftDto;
@@ -39,6 +41,15 @@ __decorate([
     (0, class_validator_1.IsEnum)(client_1.DrawerType),
     __metadata("design:type", String)
 ], OpenShiftDto.prototype, "drawerType", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Branch ID for this shift',
+        example: 'branch-123',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], OpenShiftDto.prototype, "branchId", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Notes about opening the shift',
@@ -87,6 +98,9 @@ __decorate([
         example: 1,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], QueryShiftsDto.prototype, "page", void 0);
 __decorate([
@@ -95,6 +109,10 @@ __decorate([
         example: 20,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(100),
     __metadata("design:type", Number)
 ], QueryShiftsDto.prototype, "limit", void 0);
 __decorate([

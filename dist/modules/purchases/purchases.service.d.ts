@@ -8,6 +8,15 @@ export declare class PurchasesService {
     private readonly audit;
     constructor(prisma: PrismaService, audit: AuditService);
     receive(context: AuthContext, dto: ReceivePurchaseDto): Promise<{
+        supplier: {
+            id: string;
+            tenantId: string;
+            name: string;
+            email: string | null;
+            phone: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         items: ({
             product: {
                 id: string;
@@ -31,15 +40,6 @@ export declare class PurchasesService {
             quantity: Prisma.Decimal;
             cost: Prisma.Decimal;
         })[];
-        supplier: {
-            id: string;
-            tenantId: string;
-            name: string;
-            email: string | null;
-            phone: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
     } & {
         id: string;
         tenantId: string;

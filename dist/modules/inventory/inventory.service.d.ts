@@ -13,26 +13,26 @@ export declare class InventoryService {
     constructor(prisma: PrismaService, redis: RedisService, audit: AuditService);
     findAll(tenantId: string, branchId?: string): Promise<unknown>;
     lowStock(tenantId: string, threshold?: number, branchId?: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        tenantId: string;
-        branchId: string;
         product: {
+            type: import(".prisma/client").$Enums.ProductType;
             id: string;
             name: string;
-            price: Prisma.Decimal;
             sku: string;
-            type: import(".prisma/client").$Enums.ProductType;
+            price: Prisma.Decimal;
         };
-        productId: string;
-        productVariantId: string;
-        quantity: Prisma.Decimal;
         productVariant: {
             id: string;
             name: string;
             sku: string;
         };
+        tenantId: string;
+        branchId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        productId: string;
+        quantity: Prisma.Decimal;
+        productVariantId: string;
     }[]>;
     history(tenantId: string, productId?: string, branchId?: string): Promise<({
         product: {

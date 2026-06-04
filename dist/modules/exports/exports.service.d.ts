@@ -8,8 +8,8 @@ export declare class ExportsService {
         count: number;
         data: {
             type: import(".prisma/client").$Enums.ProductType;
-            name: string;
             id: string;
+            name: string;
             sku: string;
             price: import("@prisma/client/runtime/library").Decimal;
             cost: import("@prisma/client/runtime/library").Decimal;
@@ -21,8 +21,8 @@ export declare class ExportsService {
         success: boolean;
         count: number;
         data: {
-            name: string;
             id: string;
+            name: string;
             email: string;
             createdAt: Date;
             updatedAt: Date;
@@ -34,8 +34,8 @@ export declare class ExportsService {
         success: boolean;
         count: number;
         data: {
-            name: string;
             id: string;
+            name: string;
             email: string;
             createdAt: Date;
             updatedAt: Date;
@@ -47,6 +47,10 @@ export declare class ExportsService {
         success: boolean;
         count: number;
         data: ({
+            customer: {
+                name: string;
+                email: string;
+            };
             shift: {
                 user: {
                     name: string;
@@ -73,23 +77,6 @@ export declare class ExportsService {
                 createdAt: Date;
                 updatedAt: Date;
             };
-            payments: {
-                id: string;
-                tenantId: string;
-                saleId: string;
-                method: import(".prisma/client").$Enums.PaymentMethod;
-                direction: import(".prisma/client").$Enums.PaymentDirection;
-                status: import(".prisma/client").$Enums.PaymentStatus;
-                amount: import("@prisma/client/runtime/library").Decimal;
-                reference: string | null;
-                externalRef: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-            }[];
-            customer: {
-                name: string;
-                email: string;
-            };
             items: ({
                 product: {
                     name: string;
@@ -108,6 +95,19 @@ export declare class ExportsService {
                 lineTotal: import("@prisma/client/runtime/library").Decimal;
                 createdAt: Date;
             })[];
+            payments: {
+                id: string;
+                tenantId: string;
+                saleId: string;
+                method: import(".prisma/client").$Enums.PaymentMethod;
+                direction: import(".prisma/client").$Enums.PaymentDirection;
+                status: import(".prisma/client").$Enums.PaymentStatus;
+                amount: import("@prisma/client/runtime/library").Decimal;
+                reference: string | null;
+                externalRef: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+            }[];
         } & {
             id: string;
             tenantId: string;
