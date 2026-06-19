@@ -14,6 +14,7 @@ import {
 import { PrismaService } from '../../core/database/prisma.service';
 import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
+import { InventoryService } from '../inventory/inventory.service';
 import {
   AddSaleItemDto,
   CreateSaleDto,
@@ -31,7 +32,8 @@ type PrismaTx = Prisma.TransactionClient;
 export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    private readonly inventoryService: InventoryService,
   ) {}
 
   async create(context: AuthContext, dto: CreateSaleDto) {
@@ -482,8 +484,8 @@ export class SalesService {
             const nextQuantity = new Prisma.Decimal(componentInventory.quantity).sub(totalToDeduct);
 
             if (nextQuantity.lessThan(0)) {
-              console.warn(
-                `Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}. Proceeding with negative inventory.`
+              throw new BadRequestException(
+                `Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}. Cannot complete sale.`
               );
             }
 
@@ -519,8 +521,8 @@ export class SalesService {
           const nextQuantity = new Prisma.Decimal(inventory.quantity).sub(item.quantity);
 
           if (nextQuantity.lessThan(0)) {
-            console.warn(
-              `Insufficient stock for product ${item.productId}. Need ${item.quantity}, have ${inventory.quantity}. Proceeding with negative inventory.`
+            throw new BadRequestException(
+              `Insufficient stock for product ${item.productId}. Need ${item.quantity}, have ${inventory.quantity}. Cannot complete sale.`
             );
           }
 
@@ -624,6 +626,8 @@ export class SalesService {
 
       return updatedSale;
     }, { timeout: 15000 });
+
+    await this.inventoryService.checkAndCreateAlerts(context.tenantId).catch(() => {});
 
     await this.audit.log({
       tenantId: context.tenantId,
@@ -739,6 +743,8 @@ export class SalesService {
         },
       });
     });
+
+    await this.inventoryService.checkAndCreateAlerts(context.tenantId).catch(() => {});
 
     await this.audit.log({
       tenantId: context.tenantId,
@@ -912,6 +918,12 @@ export class SalesService {
 
           const nextQuantity = new Prisma.Decimal(inventory.quantity).sub(exchangeItem.quantity);
 
+          if (nextQuantity.lessThan(0)) {
+            throw new BadRequestException(
+              `Insufficient stock for exchange product ${exchangeItem.productId}. Need ${exchangeItem.quantity}, have ${inventory.quantity}.`
+            );
+          }
+
           await tx.inventory.update({
             where: { id: inventory.id },
             data: {
@@ -999,6 +1011,8 @@ export class SalesService {
         difference: exchangeTotal.sub(returnTotal),
       };
     });
+
+    await this.inventoryService.checkAndCreateAlerts(context.tenantId).catch(() => {});
 
     await this.audit.log({
       tenantId: context.tenantId,

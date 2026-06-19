@@ -32,7 +32,6 @@ export class ShiftsController {
     status: 200,
     description: 'Shift closed successfully',
   })
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Post(':id/close')
   closeShift(@CurrentUser() user: AuthContext, @Param('id') id: string, @Body() dto: CloseShiftDto) {
     return this.shiftsService.closeShift(user, id, dto);
@@ -112,7 +111,6 @@ export class ShiftsController {
     status: 200,
     description: 'End of shift report',
   })
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('reports/end-of-shift')
   getEndOfShiftReport(@CurrentUser() user: AuthContext, @Query() query: EndOfShiftReportQueryDto) {
     return this.shiftsService.getEndOfShiftReport(user, query.shiftId);
@@ -127,7 +125,6 @@ export class ShiftsController {
     status: 200,
     description: 'Sales performance report',
   })
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @Get('reports/sales-performance')
   getSalesPerformance(@CurrentUser() user: AuthContext, @Query() query: SalesPerformanceQueryDto) {
     return this.shiftsService.getSalesPerformance(user, query.userId, query.from, query.to, query.branchId);

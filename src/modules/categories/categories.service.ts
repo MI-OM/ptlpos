@@ -21,6 +21,30 @@ export class CategoriesService {
     private readonly audit: AuditService
   ) {}
 
+  private async checkCircularReference(
+    categoryId: string,
+    newParentId: string,
+  ): Promise<boolean> {
+    let currentId: string | null = newParentId;
+    const visited = new Set<string>();
+
+    while (currentId) {
+      if (currentId === categoryId) {
+        return true;
+      }
+      if (visited.has(currentId)) {
+        return true;
+      }
+      visited.add(currentId);
+      const parent = await this.prisma.category.findUnique({
+        where: { id: currentId },
+        select: { parentId: true },
+      });
+      currentId = parent?.parentId ?? null;
+    }
+    return false;
+  }
+
   async findAll(tenantId: string, query: QueryCategoriesDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -57,9 +81,16 @@ export class CategoriesService {
         take: limit,
         orderBy: { name: 'asc' },
         include: {
+          parent: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           _count: {
             select: {
               products: true,
+              children: true,
             },
           },
         },
@@ -85,9 +116,23 @@ export class CategoriesService {
     const category = await this.prisma.category.findFirst({
       where: { id, tenantId },
       include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+          },
+        },
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
@@ -112,10 +157,24 @@ export class CategoriesService {
       throw new ConflictException('Category with this name already exists');
     }
 
+    if (dto.parentId) {
+      const parentCategory = await this.prisma.category.findFirst({
+        where: {
+          id: dto.parentId,
+          tenantId: context.tenantId,
+        },
+      });
+
+      if (!parentCategory) {
+        throw new NotFoundException('Parent category not found');
+      }
+    }
+
     const category = await this.prisma.category.create({
       data: {
         tenantId: context.tenantId,
         name: dto.name,
+        parentId: dto.parentId,
         description: dto.description,
         isActive: dto.isActive ?? true,
       },
@@ -163,10 +222,35 @@ export class CategoriesService {
       }
     }
 
+    if (dto.parentId !== undefined) {
+      if (dto.parentId === id) {
+        throw new BadRequestException('A category cannot be its own parent');
+      }
+
+      if (dto.parentId) {
+        const parentCategory = await this.prisma.category.findFirst({
+          where: {
+            id: dto.parentId,
+            tenantId: context.tenantId,
+          },
+        });
+
+        if (!parentCategory) {
+          throw new NotFoundException('Parent category not found');
+        }
+
+        const isCircular = await this.checkCircularReference(id, dto.parentId);
+        if (isCircular) {
+          throw new BadRequestException('Cannot set parent: would create circular reference');
+        }
+      }
+    }
+
     const updatedCategory = await this.prisma.category.update({
       where: { id },
       data: {
         name: dto.name,
+        parentId: dto.parentId,
         description: dto.description,
         isActive: dto.isActive,
       },
@@ -197,6 +281,7 @@ export class CategoriesService {
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
@@ -208,6 +293,10 @@ export class CategoriesService {
 
     if (existingCategory._count.products > 0) {
       throw new BadRequestException('Cannot delete category with associated products');
+    }
+
+    if (existingCategory._count.children > 0) {
+      throw new BadRequestException('Cannot delete category with subcategories');
     }
 
     await this.prisma.category.delete({

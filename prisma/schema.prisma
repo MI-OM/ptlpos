@@ -213,18 +213,22 @@ model User {
 }
 
 model Category {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   tenantId    String
+  parentId    String?
   name        String
   description String?
-  isActive    Boolean   @default(true)
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isActive    Boolean    @default(true)
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
   products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@unique([tenantId, name])
   @@index([tenantId, createdAt])
+  @@index([tenantId, parentId])
 }
 
 model Product {

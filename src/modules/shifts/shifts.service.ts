@@ -114,6 +114,7 @@ export class ShiftsService {
 
     const closingBalance = new Prisma.Decimal(dto.closingBalance);
     const discrepancy = closingBalance.sub(shift.openingBalance).sub(cashSales);
+    const totalOtherSales = otherSales.add(transferSales);
 
     const updatedShift = await this.prisma.shift.update({
       where: { id: shiftId },
@@ -122,7 +123,7 @@ export class ShiftsService {
         closingBalance,
         cashSales,
         cardSales,
-        otherSales,
+        otherSales: totalOtherSales,
         offlineDrawerBalance: shift.drawerType === DrawerType.OFFLINE || shift.drawerType === DrawerType.MIXED ? closingBalance : null,
         onlineDrawerBalance: shift.drawerType === DrawerType.ONLINE || shift.drawerType === DrawerType.MIXED ? cardSales : null,
         discrepancy,
@@ -156,8 +157,8 @@ export class ShiftsService {
       cashSales: updatedShift.cashSales,
       cardSales: updatedShift.cardSales,
       transferSales: transferSales,
-      otherSales: updatedShift.otherSales,
-      totalSales: updatedShift.cashSales.add(updatedShift.cardSales).add(transferSales).add(updatedShift.otherSales),
+      otherSales: updatedShift.otherSales.sub(transferSales),
+      totalSales: updatedShift.cashSales.add(updatedShift.cardSales).add(updatedShift.otherSales),
       discrepancy: updatedShift.discrepancy,
       status: updatedShift.status,
       notes: updatedShift.notes,

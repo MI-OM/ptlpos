@@ -33,7 +33,7 @@ export class SuppliersController {
   @ApiOperation({ summary: 'Create a new supplier' })
   @ApiResponse({ status: 201, description: 'Supplier created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
   @Post()
   create(@CurrentUser() user: AuthContext, @Body() dto: CreateSupplierDto) {
     return this.suppliersService.create(user, dto);
@@ -44,7 +44,7 @@ export class SuppliersController {
   @ApiResponse({ status: 200, description: 'Supplier updated successfully' })
   @ApiResponse({ status: 404, description: 'Supplier not found' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.SALES_REP)
   @Patch(':id')
   update(
     @CurrentUser() user: AuthContext,

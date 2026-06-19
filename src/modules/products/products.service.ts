@@ -149,6 +149,7 @@ export class ProductsService {
             select: {
               id: true,
               name: true,
+              isActive: true,
             },
           },
           // Only include variants and inventory when needed
