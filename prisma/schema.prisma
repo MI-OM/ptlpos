@@ -62,6 +62,13 @@ enum DrawerType {
   MIXED
 }
 
+enum OrderStatus {
+  PENDING
+  PARTIAL
+  FULFILLED
+  CANCELLED
+}
+
 enum PurchaseOrderStatus {
   DRAFT
   APPROVED
@@ -126,6 +133,7 @@ model Tenant {
   customers             Customer[]
   suppliers             Supplier[]
   purchaseOrders        PurchaseOrder[]
+  orders                Order[]
   productionBatches     ProductionBatch[]
   payments              Payment[]
   auditLogs             AuditLog[]
@@ -153,6 +161,7 @@ model Branch {
   sales       Sale[]
   shifts      Shift[]
   purchaseOrders PurchaseOrder[]
+  orders         Order[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -248,6 +257,7 @@ model Product {
   variants          ProductVariant[]
   inventoryRows     Inventory[]
   saleItems         SaleItem[]
+  orderItems        OrderItem[]
   txnRows           InventoryTransaction[]
   recipeHeads       Recipe[]
   recipeInputs      RecipeItem[]           @relation("RecipeItemRawMaterial")
@@ -407,6 +417,7 @@ model Customer {
   creditBalance Decimal   @default(0) @map("credit_balance") @db.Decimal(14, 2)
   tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   sales         Sale[]
+  orders        Order[]
   creditTransactions CreditTransaction[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -566,6 +577,41 @@ model PurchaseItem {
   cost            Decimal       @db.Decimal(14, 2)
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   product         Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  tenantId    String
+  branchId    String?
+  customerId  String?
+  orderNumber String      @map("order_number")
+  status      OrderStatus
+  subtotal    Decimal     @default(0) @db.Decimal(14, 2)
+  taxAmount   Decimal     @default(0) @map("tax_amount") @db.Decimal(14, 2)
+  total       Decimal     @default(0) @db.Decimal(14, 2)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch?     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  customer    Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items       OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, branchId, status, createdAt])
+}
+
+model OrderItem {
+  id                String  @id @default(cuid())
+  orderId           String
+  productId         String
+  quantity          Int
+  unitPrice         Decimal @map("unit_price") @db.Decimal(14, 2)
+  fulfilledQuantity Int     @default(0) @map("fulfilled_quantity")
+  total             Decimal @db.Decimal(14, 2)
+  order             Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product           Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
 }
 
 model Recipe {

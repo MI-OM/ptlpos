@@ -39,6 +39,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { TestModule } from './modules/test/test.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
@@ -87,6 +88,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AdminModule,
     TestModule,
     ShiftsModule,
+    OrdersModule,
     DashboardModule,
   ],
   providers: [
