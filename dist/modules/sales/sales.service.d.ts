@@ -2,12 +2,14 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/database/prisma.service';
 import { AuthContext } from '../../core/types/request-context';
 import { AuditService } from '../audit/audit.service';
+import { InventoryService } from '../inventory/inventory.service';
 import { AddSaleItemDto, CreateSaleDto, CompleteSaleDto, RefundSaleDto, QuerySalesDto, UpdateSaleItemDto } from './dto/create-sale.dto';
 import { ReceiptSettingsDto } from './dto/receipt-settings.dto';
 export declare class SalesService {
     private readonly prisma;
     private readonly audit;
-    constructor(prisma: PrismaService, audit: AuditService);
+    private readonly inventoryService;
+    constructor(prisma: PrismaService, audit: AuditService, inventoryService: InventoryService);
     create(context: AuthContext, dto: CreateSaleDto): Promise<{
         customer: {
             id: string;

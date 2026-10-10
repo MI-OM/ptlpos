@@ -30,6 +30,7 @@ export declare class ProductsService {
         category: {
             id: string;
             tenantId: string;
+            parentId: string | null;
             name: string;
             description: string | null;
             isActive: boolean;

@@ -14,12 +14,15 @@ const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../../core/database/prisma.service");
 const audit_service_1 = require("../audit/audit.service");
+const inventory_service_1 = require("../inventory/inventory.service");
 let SalesService = class SalesService {
     prisma;
     audit;
-    constructor(prisma, audit) {
+    inventoryService;
+    constructor(prisma, audit, inventoryService) {
         this.prisma = prisma;
         this.audit = audit;
+        this.inventoryService = inventoryService;
     }
     async create(context, dto) {
         const calculation = await this.buildSaleDraft(context.tenantId, dto);
@@ -391,7 +394,7 @@ let SalesService = class SalesService {
                         const totalToDeduct = new client_1.Prisma.Decimal(component.quantity).mul(item.quantity);
                         const nextQuantity = new client_1.Prisma.Decimal(componentInventory.quantity).sub(totalToDeduct);
                         if (nextQuantity.lessThan(0)) {
-                            console.warn(`Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}. Proceeding with negative inventory.`);
+                            throw new common_1.BadRequestException(`Insufficient stock for component. Need ${totalToDeduct}, have ${componentInventory.quantity}. Cannot complete sale.`);
                         }
                         await tx.inventory.update({
                             where: { id: componentInventory.id },
@@ -417,7 +420,7 @@ let SalesService = class SalesService {
                     const inventory = await this.lockInventoryRow(tx, context.tenantId, item.productId, item.productVariantId);
                     const nextQuantity = new client_1.Prisma.Decimal(inventory.quantity).sub(item.quantity);
                     if (nextQuantity.lessThan(0)) {
-                        console.warn(`Insufficient stock for product ${item.productId}. Need ${item.quantity}, have ${inventory.quantity}. Proceeding with negative inventory.`);
+                        throw new common_1.BadRequestException(`Insufficient stock for product ${item.productId}. Need ${item.quantity}, have ${inventory.quantity}. Cannot complete sale.`);
                     }
                     await tx.inventory.update({
                         where: { id: inventory.id },
@@ -506,6 +509,7 @@ let SalesService = class SalesService {
             });
             return updatedSale;
         }, { timeout: 15000 });
+        await this.inventoryService.checkAndCreateAlerts(context.tenantId).catch(() => { });
         await this.audit.log({
             tenantId: context.tenantId,
             userId: context.userId,
@@ -598,6 +602,7 @@ let SalesService = class SalesService {
                 },
             });
         });
+        await this.inventoryService.checkAndCreateAlerts(context.tenantId).catch(() => { });
         await this.audit.log({
             tenantId: context.tenantId,
             userId: context.userId,
@@ -729,6 +734,9 @@ let SalesService = class SalesService {
                     });
                     const inventory = await this.lockInventoryRow(tx, context.tenantId, exchangeItem.productId, exchangeItem.productVariantId);
                     const nextQuantity = new client_1.Prisma.Decimal(inventory.quantity).sub(exchangeItem.quantity);
+                    if (nextQuantity.lessThan(0)) {
+                        throw new common_1.BadRequestException(`Insufficient stock for exchange product ${exchangeItem.productId}. Need ${exchangeItem.quantity}, have ${inventory.quantity}.`);
+                    }
                     await tx.inventory.update({
                         where: { id: inventory.id },
                         data: {
@@ -806,6 +814,7 @@ let SalesService = class SalesService {
                 difference: exchangeTotal.sub(returnTotal),
             };
         });
+        await this.inventoryService.checkAndCreateAlerts(context.tenantId).catch(() => { });
         await this.audit.log({
             tenantId: context.tenantId,
             userId: context.userId,
@@ -1347,6 +1356,7 @@ exports.SalesService = SalesService;
 exports.SalesService = SalesService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        audit_service_1.AuditService])
+        audit_service_1.AuditService,
+        inventory_service_1.InventoryService])
 ], SalesService);
 //# sourceMappingURL=sales.service.js.map

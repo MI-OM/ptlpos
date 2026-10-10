@@ -131,6 +131,7 @@ let ProductsService = class ProductsService {
                         select: {
                             id: true,
                             name: true,
+                            isActive: true,
                         },
                     },
                     ...(query.includeVariants && {

@@ -23,6 +23,25 @@ let CategoriesService = class CategoriesService {
         this.redis = redis;
         this.audit = audit;
     }
+    async checkCircularReference(categoryId, newParentId) {
+        let currentId = newParentId;
+        const visited = new Set();
+        while (currentId) {
+            if (currentId === categoryId) {
+                return true;
+            }
+            if (visited.has(currentId)) {
+                return true;
+            }
+            visited.add(currentId);
+            const parent = await this.prisma.category.findUnique({
+                where: { id: currentId },
+                select: { parentId: true },
+            });
+            currentId = parent?.parentId ?? null;
+        }
+        return false;
+    }
     async findAll(tenantId, query) {
         const page = query.page ?? 1;
         const limit = query.limit ?? 20;
@@ -56,9 +75,16 @@ let CategoriesService = class CategoriesService {
                 take: limit,
                 orderBy: { name: 'asc' },
                 include: {
+                    parent: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
                     _count: {
                         select: {
                             products: true,
+                            children: true,
                         },
                     },
                 },
@@ -81,9 +107,23 @@ let CategoriesService = class CategoriesService {
         const category = await this.prisma.category.findFirst({
             where: { id, tenantId },
             include: {
+                parent: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                children: {
+                    select: {
+                        id: true,
+                        name: true,
+                        isActive: true,
+                    },
+                },
                 _count: {
                     select: {
                         products: true,
+                        children: true,
                     },
                 },
             },
@@ -103,10 +143,22 @@ let CategoriesService = class CategoriesService {
         if (existingCategory) {
             throw new common_1.ConflictException('Category with this name already exists');
         }
+        if (dto.parentId) {
+            const parentCategory = await this.prisma.category.findFirst({
+                where: {
+                    id: dto.parentId,
+                    tenantId: context.tenantId,
+                },
+            });
+            if (!parentCategory) {
+                throw new common_1.NotFoundException('Parent category not found');
+            }
+        }
         const category = await this.prisma.category.create({
             data: {
                 tenantId: context.tenantId,
                 name: dto.name,
+                parentId: dto.parentId,
                 description: dto.description,
                 isActive: dto.isActive ?? true,
             },
@@ -146,10 +198,31 @@ let CategoriesService = class CategoriesService {
                 throw new common_1.ConflictException('Category with this name already exists');
             }
         }
+        if (dto.parentId !== undefined) {
+            if (dto.parentId === id) {
+                throw new common_1.BadRequestException('A category cannot be its own parent');
+            }
+            if (dto.parentId) {
+                const parentCategory = await this.prisma.category.findFirst({
+                    where: {
+                        id: dto.parentId,
+                        tenantId: context.tenantId,
+                    },
+                });
+                if (!parentCategory) {
+                    throw new common_1.NotFoundException('Parent category not found');
+                }
+                const isCircular = await this.checkCircularReference(id, dto.parentId);
+                if (isCircular) {
+                    throw new common_1.BadRequestException('Cannot set parent: would create circular reference');
+                }
+            }
+        }
         const updatedCategory = await this.prisma.category.update({
             where: { id },
             data: {
                 name: dto.name,
+                parentId: dto.parentId,
                 description: dto.description,
                 isActive: dto.isActive,
             },
@@ -177,6 +250,7 @@ let CategoriesService = class CategoriesService {
                 _count: {
                     select: {
                         products: true,
+                        children: true,
                     },
                 },
             },
@@ -186,6 +260,9 @@ let CategoriesService = class CategoriesService {
         }
         if (existingCategory._count.products > 0) {
             throw new common_1.BadRequestException('Cannot delete category with associated products');
+        }
+        if (existingCategory._count.children > 0) {
+            throw new common_1.BadRequestException('Cannot delete category with subcategories');
         }
         await this.prisma.category.delete({
             where: { id },

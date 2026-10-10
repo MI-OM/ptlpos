@@ -10,10 +10,21 @@ export declare class CategoriesController {
     findOne(user: AuthContext, id: string): Promise<{
         _count: {
             products: number;
+            children: number;
         };
+        parent: {
+            id: string;
+            name: string;
+        };
+        children: {
+            id: string;
+            name: string;
+            isActive: boolean;
+        }[];
     } & {
         id: string;
         tenantId: string;
+        parentId: string | null;
         name: string;
         description: string | null;
         isActive: boolean;
@@ -23,6 +34,7 @@ export declare class CategoriesController {
     create(user: AuthContext, createCategoryDto: CreateCategoryDto): Promise<{
         id: string;
         tenantId: string;
+        parentId: string | null;
         name: string;
         description: string | null;
         isActive: boolean;
@@ -32,6 +44,7 @@ export declare class CategoriesController {
     update(user: AuthContext, id: string, updateCategoryDto: UpdateCategoryDto): Promise<{
         id: string;
         tenantId: string;
+        parentId: string | null;
         name: string;
         description: string | null;
         isActive: boolean;

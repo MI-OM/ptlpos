@@ -44,6 +44,7 @@ const metrics_module_1 = require("./modules/metrics/metrics.module");
 const admin_module_1 = require("./modules/admin/admin.module");
 const test_module_1 = require("./modules/test/test.module");
 const shifts_module_1 = require("./modules/shifts/shifts.module");
+const orders_module_1 = require("./modules/orders/orders.module");
 const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
 let AppModule = class AppModule {
 };
@@ -95,6 +96,7 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             test_module_1.TestModule,
             shifts_module_1.ShiftsModule,
+            orders_module_1.OrdersModule,
             dashboard_module_1.DashboardModule,
         ],
         providers: [

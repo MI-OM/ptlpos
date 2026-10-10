@@ -14,6 +14,7 @@ const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 class CreateCategoryDto {
     name;
+    parentId;
     description;
     isActive;
 }
@@ -29,6 +30,16 @@ __decorate([
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], CreateCategoryDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Parent category ID for subcategories',
+        example: 'clx...',
+        required: false,
+    }),
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateCategoryDto.prototype, "parentId", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Category description',

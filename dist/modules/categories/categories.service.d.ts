@@ -10,14 +10,26 @@ export declare class CategoriesService {
     private readonly redis;
     private readonly audit;
     constructor(prisma: PrismaService, redis: RedisService, audit: AuditService);
+    private checkCircularReference;
     findAll(tenantId: string, query: QueryCategoriesDto): Promise<any>;
     findOne(tenantId: string, id: string): Promise<{
         _count: {
             products: number;
+            children: number;
         };
+        parent: {
+            id: string;
+            name: string;
+        };
+        children: {
+            id: string;
+            name: string;
+            isActive: boolean;
+        }[];
     } & {
         id: string;
         tenantId: string;
+        parentId: string | null;
         name: string;
         description: string | null;
         isActive: boolean;
@@ -27,6 +39,7 @@ export declare class CategoriesService {
     create(context: AuthContext, dto: CreateCategoryDto): Promise<{
         id: string;
         tenantId: string;
+        parentId: string | null;
         name: string;
         description: string | null;
         isActive: boolean;
@@ -36,6 +49,7 @@ export declare class CategoriesService {
     update(context: AuthContext, id: string, dto: UpdateCategoryDto): Promise<{
         id: string;
         tenantId: string;
+        parentId: string | null;
         name: string;
         description: string | null;
         isActive: boolean;
